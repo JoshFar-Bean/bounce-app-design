@@ -1,0 +1,10 @@
+{
+  "description": "Create and document source-app design systems from screenshots, with reusable components, design tokens, visual reviews, and downloadable exports.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
