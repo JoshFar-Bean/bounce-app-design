@@ -1,12 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bounce Map Prototype</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body {
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
       width: 100%;
       height: 100%;
       overflow: hidden;
@@ -14,12 +21,14 @@
       font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       user-select: none;
     }
+
     #map-container {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
     }
+
     #map {
       width: 100%;
       height: 100%;
@@ -53,6 +62,7 @@
       z-index: 10;
       transition: top 0.4s ease, left 0.4s ease;
     }
+
     .user-beam-wrap {
       position: absolute;
       top: 10px;
@@ -63,11 +73,13 @@
       transform-origin: top center;
       pointer-events: none;
     }
+
     .user-beam-svg {
       width: 100%;
       height: 100%;
       overflow: visible;
     }
+
     .user-blue-dot {
       width: 22px;
       height: 22px;
@@ -80,6 +92,7 @@
       z-index: 5;
       margin: 0 auto;
     }
+
     .user-blue-dot-inner {
       width: 14px;
       height: 14px;
@@ -99,12 +112,13 @@
       opacity: 0.9;
       pointer-events: none;
     }
+
     .google-watermark span {
       color: #ffffff;
       font-size: 15px;
       font-weight: 500;
       letter-spacing: -0.02em;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
     }
 
     /* --- Itinerary Overlay Styles --- */
@@ -115,9 +129,11 @@
       display: none;
       z-index: 6;
     }
+
     body.mode-itinerary .itinerary-container {
       display: block;
     }
+
     body.mode-itinerary .google-watermark {
       bottom: 160px;
     }
@@ -139,6 +155,7 @@
       transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.22s, opacity 0.22s, background-color 0.22s;
       z-index: 25;
     }
+
     .route-badge-overlay:hover,
     .route-badge-overlay.highlighted {
       transform: translate(-50%, -100%) scale(1.08);
@@ -147,10 +164,12 @@
       border: 1.5px solid #00e6b8;
       z-index: 40;
     }
+
     .route-badge-overlay.dimmed {
       opacity: 0.28;
       transform: translate(-50%, -100%) scale(0.92);
     }
+
     .route-badge-top {
       display: flex;
       align-items: center;
@@ -159,6 +178,7 @@
       font-weight: 700;
       letter-spacing: -0.01em;
     }
+
     .route-badge-sub {
       font-size: 12px;
       font-weight: 500;
@@ -189,10 +209,12 @@
       z-index: 18;
       transition: transform 0.2s, opacity 0.2s;
     }
+
     .poi-rating-badge:hover {
       transform: translate(-50%, -50%) scale(1.08);
       z-index: 30;
     }
+
     .poi-rating-icon {
       width: 20px;
       height: 20px;
@@ -201,33 +223,40 @@
       place-items: center;
       font-size: 11px;
     }
+
     .poi-rating-icon.peach {
       background: #f28b82;
       color: #202124;
     }
+
     .poi-rating-icon.pink {
       background: #ff8a80;
       color: #202124;
     }
+
     .poi-rating-icon.lavender {
       background: #d7aefb;
       color: #202124;
     }
+
     .poi-rating-icon.teal {
       background: #78d9ec;
       color: #202124;
     }
+
     .poi-rating-icon.kahve-peach {
       background: #f28b82;
       display: grid;
       place-items: center;
     }
+
     .poi-rating-icon.kahve-peach span {
       width: 8px;
       height: 8px;
       background: #202124;
       border-radius: 50%;
     }
+
     .poi-name-label {
       margin-left: 6px;
       font-size: 15px;
@@ -244,6 +273,7 @@
       cursor: pointer;
       z-index: 20;
     }
+
     .stop-point-dot {
       width: 18px;
       height: 18px;
@@ -252,58 +282,76 @@
       border: 3px solid #ffffff;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 10px rgba(0, 230, 184, 0.7);
     }
+
     .stop-point-dot.current {
       background: #00e6b8;
       box-shadow: 0 0 0 4px rgba(0, 230, 184, 0.3), 0 0 14px rgba(0, 230, 184, 0.9);
       animation: pulseTeal 2s infinite;
     }
+
     @keyframes pulseTeal {
-      0%, 100% { box-shadow: 0 0 0 4px rgba(0, 230, 184, 0.35), 0 0 14px rgba(0, 230, 184, 0.8); }
-      50% { box-shadow: 0 0 0 10px rgba(0, 230, 184, 0), 0 0 20px rgba(0, 230, 184, 0.9); }
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 4px rgba(0, 230, 184, 0.35), 0 0 14px rgba(0, 230, 184, 0.8);
+      }
+
+      50% {
+        box-shadow: 0 0 0 10px rgba(0, 230, 184, 0), 0 0 20px rgba(0, 230, 184, 0.9);
+      }
     }
 
     /* Light Theme Adjustments */
     body.theme-light {
       background: #e8eaed;
     }
+
     body.theme-light .vector-map-fallback {
       background: #e8eaed;
     }
+
     body.theme-light .vector-map-fallback rect[fill="#172331"],
     body.theme-light .vector-map-fallback rect[fill="#121f2d"] {
       fill: #e8eaed;
     }
+
     body.theme-light .vector-map-fallback path[fill="url(#parkGrad)"],
     body.theme-light .vector-map-fallback path[fill="url(#marinapark)"] {
       fill: #c8e6c9;
     }
+
     body.theme-light .vector-map-fallback path[fill="url(#waterGrad)"],
     body.theme-light .vector-map-fallback path[fill="url(#marinawater)"] {
       fill: #bbdefb;
     }
+
     body.theme-light .vector-map-fallback path[stroke="#253f58"],
     body.theme-light .vector-map-fallback path[stroke="#2d4d6c"],
     body.theme-light .vector-map-fallback path[stroke="#1e344a"],
     body.theme-light .vector-map-fallback path[stroke="#25425f"] {
       stroke: #ffffff;
     }
+
     body.theme-light .vector-map-fallback text {
       fill: #5f6368;
     }
+
     body.theme-light .poi-rating-badge {
       background: #ffffff;
       color: #202124;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
+
     body.theme-light .poi-name-label {
       color: #202124;
       text-shadow: 0 1px 2px rgba(255, 255, 255, 0.9);
     }
   </style>
 </head>
+
 <body class="mode-explore">
   <div id="map-container">
-    
+
     <!-- SVG Vector Map Backdrop (Jurong Lake Gardens for Explore Mode) -->
     <svg id="svg-explore-map" class="vector-map-fallback" viewBox="0 0 503 1024" preserveAspectRatio="xMidYMid slice">
       <defs>
@@ -318,23 +366,30 @@
       </defs>
 
       <rect width="100%" height="100%" fill="#172331" />
-      <path d="M 80,480 C 120,440 260,450 300,530 C 330,590 310,720 220,740 C 130,760 70,680 60,600 Z" fill="url(#parkGrad)" />
+      <path d="M 80,480 C 120,440 260,450 300,530 C 330,590 310,720 220,740 C 130,760 70,680 60,600 Z"
+        fill="url(#parkGrad)" />
       <path d="M 0,550 C 40,540 90,570 100,640 C 110,710 40,750 0,760 Z" fill="url(#parkGrad)" />
-      <path d="M 120,530 C 170,520 220,550 225,600 C 230,660 170,700 125,670 C 90,645 80,555 120,530 Z" fill="url(#waterGrad)" />
-      
+      <path d="M 120,530 C 170,520 220,550 225,600 C 230,660 170,700 125,670 C 90,645 80,555 120,530 Z"
+        fill="url(#waterGrad)" />
+
       <!-- Boon Lay Way -->
-      <path d="M -20,440 C 80,430 160,460 280,510 C 380,550 450,580 530,630" fill="none" stroke="#253f58" stroke-width="12" stroke-linecap="round" />
-      <path d="M -20,440 C 80,430 160,460 280,510 C 380,550 450,580 530,630" fill="none" stroke="#2d4d6c" stroke-width="8" stroke-linecap="round" />
+      <path d="M -20,440 C 80,430 160,460 280,510 C 380,550 450,580 530,630" fill="none" stroke="#253f58"
+        stroke-width="12" stroke-linecap="round" />
+      <path d="M -20,440 C 80,430 160,460 280,510 C 380,550 450,580 530,630" fill="none" stroke="#2d4d6c"
+        stroke-width="8" stroke-linecap="round" />
       <!-- Bukit Batok Rd -->
       <path d="M 380,120 C 410,210 450,380 470,550" fill="none" stroke="#253f58" stroke-width="10" />
       <path d="M 380,120 C 410,210 450,380 470,550" fill="none" stroke="#2d4d6c" stroke-width="7" />
       <!-- Road Names -->
-      <text x="35" y="433" fill="#889cb0" font-size="11.5" font-weight="500" transform="rotate(3 35 433)">Boon Lay Way</text>
-      <text x="390" y="585" fill="#889cb0" font-size="11" font-weight="500" transform="rotate(18 390 585)">Boon Lay Way</text>
+      <text x="35" y="433" fill="#889cb0" font-size="11.5" font-weight="500" transform="rotate(3 35 433)">Boon Lay
+        Way</text>
+      <text x="390" y="585" fill="#889cb0" font-size="11" font-weight="500" transform="rotate(18 390 585)">Boon Lay
+        Way</text>
     </svg>
 
     <!-- SVG Vector Map Backdrop (Downtown Singapore / Shenton Way / Chinatown for Itinerary Mode) -->
-    <svg id="svg-itinerary-map" class="vector-map-fallback" viewBox="0 0 503 1024" preserveAspectRatio="xMidYMid slice" style="display: none;">
+    <svg id="svg-itinerary-map" class="vector-map-fallback" viewBox="0 0 503 1024" preserveAspectRatio="xMidYMid slice"
+      style="display: none;">
       <defs>
         <linearGradient id="marinawater" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stop-color="#091827" />
@@ -350,16 +405,22 @@
       <rect width="100%" height="100%" fill="#162230" />
 
       <!-- Keppel Harbour / Marina Bay Waters -->
-      <path d="M -50,680 C 100,690 280,630 450,540 C 490,520 540,510 560,510 L 560,1100 L -50,1100 Z" fill="url(#marinawater)" />
+      <path d="M -50,680 C 100,690 280,630 450,540 C 490,520 540,510 560,510 L 560,1100 L -50,1100 Z"
+        fill="url(#marinawater)" />
       <!-- Marina Bay Basin (top-right) -->
-      <path d="M 320,120 C 370,160 420,240 460,340 C 510,440 550,460 560,460 L 560,-20 L 320,-20 Z" fill="url(#marinawater)" />
+      <path d="M 320,120 C 370,160 420,240 460,340 C 510,440 550,460 560,460 L 560,-20 L 320,-20 Z"
+        fill="url(#marinawater)" />
       <!-- Singapore River -->
-      <path d="M 0,220 C 120,210 180,260 260,250 C 310,240 370,200 420,180" fill="none" stroke="#0e2336" stroke-width="26" stroke-linecap="round" />
+      <path d="M 0,220 C 120,210 180,260 260,250 C 310,240 370,200 420,180" fill="none" stroke="#0e2336"
+        stroke-width="26" stroke-linecap="round" />
 
       <!-- Keppel Viaduct / AYE (Bottom Slate Blue Highway) -->
-      <path d="M -20,620 C 140,610 280,560 480,480" fill="none" stroke="#253f58" stroke-width="14" stroke-linecap="round" />
-      <path d="M -20,620 C 140,610 280,560 480,480" fill="none" stroke="#2d4d6c" stroke-width="9" stroke-linecap="round" />
-      <text x="25" y="605" fill="#889cb0" font-size="12" font-weight="600" transform="rotate(-6 25 605)">el Viaduct</text>
+      <path d="M -20,620 C 140,610 280,560 480,480" fill="none" stroke="#253f58" stroke-width="14"
+        stroke-linecap="round" />
+      <path d="M -20,620 C 140,610 280,560 480,480" fill="none" stroke="#2d4d6c" stroke-width="9"
+        stroke-linecap="round" />
+      <text x="25" y="605" fill="#889cb0" font-size="12" font-weight="600" transform="rotate(-6 25 605)">el
+        Viaduct</text>
       <text x="25" y="550" fill="#758a9e" font-size="11" font-weight="500">abseil Maps</text>
 
       <!-- Road Network (Downtown Singapore Grid) -->
@@ -378,11 +439,14 @@
       <!-- SVG Fallback Polyline Layers: MRT = Solid MRT Line Colour, Bus = Solid Blue Line, Walk = Blue Dots -->
       <g id="svg-fallback-routes">
         <!-- Leg 0 (Kahve to Suntec): MRT Downtown Line - Solid MRT Blue -->
-        <path id="svg-leg-0" d="M 215,540 C 270,470 330,370 420,140" fill="none" stroke="#005caa" stroke-width="6" stroke-linecap="round" />
+        <path id="svg-leg-0" d="M 215,540 C 270,470 330,370 420,140" fill="none" stroke="#005caa" stroke-width="6"
+          stroke-linecap="round" />
         <!-- Leg 1 (Suntec to KŌBASHI): Bus 107 - Solid Blue Line -->
-        <path id="svg-leg-1" d="M 420,140 C 360,180 290,220 205,310" fill="none" stroke="#1a73e8" stroke-width="6" stroke-linecap="round" />
+        <path id="svg-leg-1" d="M 420,140 C 360,180 290,220 205,310" fill="none" stroke="#1a73e8" stroke-width="6"
+          stroke-linecap="round" />
         <!-- Leg 2 (KŌBASHI to next stop): Walk - Blue Dots -->
-        <path id="svg-leg-2" d="M 205,310 C 220,335 240,350 270,330" fill="none" stroke="#1a73e8" stroke-width="5" stroke-linecap="round" stroke-dasharray="1 10" />
+        <path id="svg-leg-2" d="M 205,310 C 220,335 240,350 270,330" fill="none" stroke="#1a73e8" stroke-width="5"
+          stroke-linecap="round" stroke-dasharray="1 10" />
       </g>
     </svg>
 
@@ -391,7 +455,7 @@
 
     <!-- Map Overlay Layer -->
     <div class="map-overlay">
-      
+
       <!-- User Location Indicator (Blue Dot with Directional Heading Beam) -->
       <div class="user-location-marker" id="user-marker-el">
         <div class="user-beam-wrap">
@@ -416,10 +480,18 @@
       <!-- Google Maps Logo Watermark -->
       <div class="google-watermark">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
+          <path
+            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+            fill="#4285F4" />
+          <path
+            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+            fill="#34A853" />
+          <path
+            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+            fill="#FBBC05" />
+          <path
+            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+            fill="#EA4335" />
         </svg>
         <span style="font-weight: 500; font-size: 15px; margin-left: 2px;">Google</span>
       </div>
@@ -427,9 +499,11 @@
       <!-- Itinerary Overlays (Badges matching itinerary symbol, Stop Dots, and Rating Bubbles) -->
       <div id="itinerary-dom-overlay" class="itinerary-container">
         <!-- Banner 0: Train Symbol for Downtown Line -->
-        <div id="badge-route-0" class="route-badge-overlay" style="top: 155px; left: 340px;" onclick="window.onBadgeClick(0)">
+        <div id="badge-route-0" class="route-badge-overlay" style="top: 155px; left: 340px;"
+          onclick="window.onBadgeClick(0)">
           <div class="route-badge-top">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
               <rect x="4" y="3" width="16" height="15" rx="3" fill="none" />
               <path d="M8 21l2-3M16 21l-2-3M4 11h16M8 7h.01M16 7h.01" />
             </svg>
@@ -439,9 +513,11 @@
         </div>
 
         <!-- Banner 1: Bus Symbol for Bus 107 -->
-        <div id="badge-route-1" class="route-badge-overlay" style="top: 240px; left: 310px;" onclick="window.onBadgeClick(1)">
+        <div id="badge-route-1" class="route-badge-overlay" style="top: 240px; left: 310px;"
+          onclick="window.onBadgeClick(1)">
           <div class="route-badge-top">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
               <rect x="4" y="3" width="16" height="16" rx="3" fill="none" />
               <path d="M4 11h16M8 16h.01M16 16h.01M7 21v-2M17 21v-2" />
             </svg>
@@ -451,10 +527,12 @@
         </div>
 
         <!-- Banner 2: Walking Symbol for Walk -->
-        <div id="badge-route-2" class="route-badge-overlay" style="top: 320px; left: 245px;" onclick="window.onBadgeClick(2)">
+        <div id="badge-route-2" class="route-badge-overlay" style="top: 320px; left: 245px;"
+          onclick="window.onBadgeClick(2)">
           <div class="route-badge-top">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7z"/>
+              <path
+                d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7z" />
             </svg>
             <span>8 min</span>
           </div>
@@ -1018,7 +1096,7 @@
     }
 
     // Global helper for fallback badge clicks
-    window.onBadgeClick = function(index) {
+    window.onBadgeClick = function (index) {
       highlightLeg(index);
       window.parent.postMessage({ type: 'ROUTE_CLICKED', index }, '*');
     };
@@ -1111,6 +1189,8 @@
       }
     });
   </script>
-  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCR9Vi_lsTBLbpgfDYP-0kdy81b2PkaE-w&callback=initMap"></script>
+  <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCR9Vi_lsTBLbpgfDYP-0kdy81b2PkaE-w&callback=initMap"></script>
 </body>
+
 </html>
