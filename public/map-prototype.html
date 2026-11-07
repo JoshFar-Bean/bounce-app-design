@@ -264,10 +264,31 @@
 
     /* Light Theme Adjustments */
     body.theme-light {
-      background: #d8edef;
+      background: #e8eaed;
     }
     body.theme-light .vector-map-fallback {
-      background: #e4f2f4;
+      background: #e8eaed;
+    }
+    body.theme-light .vector-map-fallback rect[fill="#172331"],
+    body.theme-light .vector-map-fallback rect[fill="#121f2d"] {
+      fill: #e8eaed;
+    }
+    body.theme-light .vector-map-fallback path[fill="url(#parkGrad)"],
+    body.theme-light .vector-map-fallback path[fill="url(#marinapark)"] {
+      fill: #c8e6c9;
+    }
+    body.theme-light .vector-map-fallback path[fill="url(#waterGrad)"],
+    body.theme-light .vector-map-fallback path[fill="url(#marinawater)"] {
+      fill: #bbdefb;
+    }
+    body.theme-light .vector-map-fallback path[stroke="#253f58"],
+    body.theme-light .vector-map-fallback path[stroke="#2d4d6c"],
+    body.theme-light .vector-map-fallback path[stroke="#1e344a"],
+    body.theme-light .vector-map-fallback path[stroke="#25425f"] {
+      stroke: #ffffff;
+    }
+    body.theme-light .vector-map-fallback text {
+      fill: #5f6368;
     }
     body.theme-light .poi-rating-badge {
       background: #ffffff;
