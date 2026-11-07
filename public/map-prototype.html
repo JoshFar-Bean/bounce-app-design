@@ -3,178 +3,1092 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bounce Map Prototype (Full Itinerary & Live Routing)</title>
+  <title>Bounce Map Prototype</title>
   <style>
-    <style>
-  body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background: transparent !important; }
-  #map { width: 100vw; height: 100vh; transition: height 0.4s ease-in-out; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #16212e;
+      font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      user-select: none;
+    }
+    #map-container {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Fallback Vector Map Canvas */
+    .vector-map-fallback {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      background: #172331;
+      overflow: hidden;
+    }
+
+    /* Map Overlay Layer */
+    .map-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    /* User Location Marker: Blue Dot with Heading Beam & Wave Arcs */
+    .user-location-marker {
+      position: absolute;
+      top: 382px;
+      left: 248px;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 10;
+      transition: top 0.4s ease, left 0.4s ease;
+    }
+    .user-beam-wrap {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%) rotate(15deg);
+      width: 96px;
+      height: 120px;
+      transform-origin: top center;
+      pointer-events: none;
+    }
+    .user-beam-svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+    .user-blue-dot {
+      width: 22px;
+      height: 22px;
+      background: #ffffff;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45), 0 0 12px rgba(66, 133, 244, 0.65);
+      position: relative;
+      z-index: 5;
+      margin: 0 auto;
+    }
+    .user-blue-dot-inner {
+      width: 14px;
+      height: 14px;
+      background: #1a73e8;
+      border-radius: 50%;
+    }
+
+    /* Google Maps Logo Watermark */
+    .google-watermark {
+      position: absolute;
+      bottom: 285px;
+      left: 16px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      opacity: 0.9;
+      pointer-events: none;
+    }
+    .google-watermark span {
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+    }
+
+    /* --- Itinerary Overlay Styles --- */
+    .itinerary-container {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: none;
+      z-index: 6;
+    }
+    body.mode-itinerary .itinerary-container {
+      display: block;
+    }
+    body.mode-itinerary .google-watermark {
+      bottom: 160px;
+    }
+
+    /* Standard Google Maps Blue Route Duration Badges */
+    .route-badge-overlay {
+      position: absolute;
+      transform: translate(-50%, -100%);
+      background: #0d57d5;
+      color: #ffffff;
+      padding: 6px 12px;
+      border-radius: 12px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45), 0 0 10px rgba(13, 87, 213, 0.4);
+      display: flex;
+      flex-direction: column;
+      pointer-events: auto;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.22s, opacity 0.22s, background-color 0.22s;
+      z-index: 25;
+    }
+    .route-badge-overlay:hover,
+    .route-badge-overlay.highlighted {
+      transform: translate(-50%, -100%) scale(1.08);
+      background: #1a73e8;
+      box-shadow: 0 6px 20px rgba(0, 230, 184, 0.7), 0 0 14px rgba(0, 230, 184, 0.6);
+      border: 1.5px solid #00e6b8;
+      z-index: 40;
+    }
+    .route-badge-overlay.dimmed {
+      opacity: 0.28;
+      transform: translate(-50%, -100%) scale(0.92);
+    }
+    .route-badge-top {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .route-badge-sub {
+      font-size: 12px;
+      font-weight: 500;
+      opacity: 0.92;
+      margin-left: 22px;
+      margin-top: 1px;
+      white-space: nowrap;
+    }
+
+    /* Place Rating Pills & Bubbles */
+    .poi-rating-badge {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      background: #393d44;
+      color: #ffffff;
+      height: 28px;
+      padding: 2px 8px 2px 4px;
+      border-radius: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12.5px;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+      pointer-events: auto;
+      cursor: pointer;
+      white-space: nowrap;
+      z-index: 18;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+    .poi-rating-badge:hover {
+      transform: translate(-50%, -50%) scale(1.08);
+      z-index: 30;
+    }
+    .poi-rating-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+    }
+    .poi-rating-icon.peach {
+      background: #f28b82;
+      color: #202124;
+    }
+    .poi-rating-icon.pink {
+      background: #ff8a80;
+      color: #202124;
+    }
+    .poi-rating-icon.lavender {
+      background: #d7aefb;
+      color: #202124;
+    }
+    .poi-rating-icon.teal {
+      background: #78d9ec;
+      color: #202124;
+    }
+    .poi-rating-icon.kahve-peach {
+      background: #f28b82;
+      display: grid;
+      place-items: center;
+    }
+    .poi-rating-icon.kahve-peach span {
+      width: 8px;
+      height: 8px;
+      background: #202124;
+      border-radius: 50%;
+    }
+    .poi-name-label {
+      margin-left: 6px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #ffffff;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
+    }
+
+    /* Stop Circle Marker */
+    .stop-point-marker {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      pointer-events: auto;
+      cursor: pointer;
+      z-index: 20;
+    }
+    .stop-point-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #00e6b8;
+      border: 3px solid #ffffff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 10px rgba(0, 230, 184, 0.7);
+    }
+    .stop-point-dot.current {
+      background: #00e6b8;
+      box-shadow: 0 0 0 4px rgba(0, 230, 184, 0.3), 0 0 14px rgba(0, 230, 184, 0.9);
+      animation: pulseTeal 2s infinite;
+    }
+    @keyframes pulseTeal {
+      0%, 100% { box-shadow: 0 0 0 4px rgba(0, 230, 184, 0.35), 0 0 14px rgba(0, 230, 184, 0.8); }
+      50% { box-shadow: 0 0 0 10px rgba(0, 230, 184, 0), 0 0 20px rgba(0, 230, 184, 0.9); }
+    }
+
+    /* Light Theme Adjustments */
+    body.theme-light {
+      background: #d8edef;
+    }
+    body.theme-light .vector-map-fallback {
+      background: #e4f2f4;
+    }
+    body.theme-light .poi-rating-badge {
+      background: #ffffff;
+      color: #202124;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+    body.theme-light .poi-name-label {
+      color: #202124;
+      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.9);
+    }
   </style>
 </head>
-<body>
-  <!-- 1. Only the map container remains -->
-  <div id="map"></div>
+<body class="mode-explore">
+  <div id="map-container">
+    
+    <!-- SVG Vector Map Backdrop (Jurong Lake Gardens for Explore Mode) -->
+    <svg id="svg-explore-map" class="vector-map-fallback" viewBox="0 0 503 1024" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <linearGradient id="waterGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#0a1724" />
+          <stop offset="100%" stop-color="#0e1f30" />
+        </linearGradient>
+        <linearGradient id="parkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#10323a" />
+          <stop offset="100%" stop-color="#0c252a" />
+        </linearGradient>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#172331" />
+      <path d="M 80,480 C 120,440 260,450 300,530 C 330,590 310,720 220,740 C 130,760 70,680 60,600 Z" fill="url(#parkGrad)" />
+      <path d="M 0,550 C 40,540 90,570 100,640 C 110,710 40,750 0,760 Z" fill="url(#parkGrad)" />
+      <path d="M 120,530 C 170,520 220,550 225,600 C 230,660 170,700 125,670 C 90,645 80,555 120,530 Z" fill="url(#waterGrad)" />
+      
+      <!-- Boon Lay Way -->
+      <path d="M -20,440 C 80,430 160,460 280,510 C 380,550 450,580 530,630" fill="none" stroke="#253f58" stroke-width="12" stroke-linecap="round" />
+      <path d="M -20,440 C 80,430 160,460 280,510 C 380,550 450,580 530,630" fill="none" stroke="#2d4d6c" stroke-width="8" stroke-linecap="round" />
+      <!-- Bukit Batok Rd -->
+      <path d="M 380,120 C 410,210 450,380 470,550" fill="none" stroke="#253f58" stroke-width="10" />
+      <path d="M 380,120 C 410,210 450,380 470,550" fill="none" stroke="#2d4d6c" stroke-width="7" />
+      <!-- Road Names -->
+      <text x="35" y="433" fill="#889cb0" font-size="11.5" font-weight="500" transform="rotate(3 35 433)">Boon Lay Way</text>
+      <text x="390" y="585" fill="#889cb0" font-size="11" font-weight="500" transform="rotate(18 390 585)">Boon Lay Way</text>
+    </svg>
+
+    <!-- SVG Vector Map Backdrop (Downtown Singapore / Shenton Way / Chinatown for Itinerary Mode) -->
+    <svg id="svg-itinerary-map" class="vector-map-fallback" viewBox="0 0 503 1024" preserveAspectRatio="xMidYMid slice" style="display: none;">
+      <defs>
+        <linearGradient id="marinawater" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#091827" />
+          <stop offset="100%" stop-color="#0e2336" />
+        </linearGradient>
+        <filter id="glowCyan" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+      </defs>
+
+      <!-- Land Background -->
+      <rect width="100%" height="100%" fill="#162230" />
+
+      <!-- Keppel Harbour / Marina Bay Waters -->
+      <path d="M -50,680 C 100,690 280,630 450,540 C 490,520 540,510 560,510 L 560,1100 L -50,1100 Z" fill="url(#marinawater)" />
+      <!-- Marina Bay Basin (top-right) -->
+      <path d="M 320,120 C 370,160 420,240 460,340 C 510,440 550,460 560,460 L 560,-20 L 320,-20 Z" fill="url(#marinawater)" />
+      <!-- Singapore River -->
+      <path d="M 0,220 C 120,210 180,260 260,250 C 310,240 370,200 420,180" fill="none" stroke="#0e2336" stroke-width="26" stroke-linecap="round" />
+
+      <!-- Keppel Viaduct / AYE (Bottom Slate Blue Highway) -->
+      <path d="M -20,620 C 140,610 280,560 480,480" fill="none" stroke="#253f58" stroke-width="14" stroke-linecap="round" />
+      <path d="M -20,620 C 140,610 280,560 480,480" fill="none" stroke="#2d4d6c" stroke-width="9" stroke-linecap="round" />
+      <text x="25" y="605" fill="#889cb0" font-size="12" font-weight="600" transform="rotate(-6 25 605)">el Viaduct</text>
+      <text x="25" y="550" fill="#758a9e" font-size="11" font-weight="500">abseil Maps</text>
+
+      <!-- Road Network (Downtown Singapore Grid) -->
+      <path d="M 90,620 L 330,300" fill="none" stroke="#243d54" stroke-width="9" />
+      <path d="M 120,640 L 360,320" fill="none" stroke="#243d54" stroke-width="9" />
+      <path d="M 60,600 L 300,280" fill="none" stroke="#243d54" stroke-width="8" />
+      <path d="M 170,440 L 220,190" fill="none" stroke="#2a455f" stroke-width="10" />
+      <text x="230" y="215" fill="#7e93a7" font-size="10.5" font-weight="500">South Bridge Rd</text>
+      <text x="40" y="280" fill="#7e93a7" font-size="11" font-weight="500">nuplace</text>
+
+      <path d="M 70,390 L 380,480" fill="none" stroke="#1f3448" stroke-width="7" />
+      <path d="M 110,340 L 410,430" fill="none" stroke="#1f3448" stroke-width="7" />
+      <path d="M 140,290 L 440,380" fill="none" stroke="#1f3448" stroke-width="7" />
+      <path d="M 330,300 C 380,240 410,180 430,80" fill="none" stroke="#253f58" stroke-width="10" />
+
+      <!-- SVG Fallback Polyline Layers: MRT = Solid MRT Line Colour, Bus = Solid Blue Line, Walk = Blue Dots -->
+      <g id="svg-fallback-routes">
+        <!-- Leg 0 (Kahve to Suntec): MRT Downtown Line - Solid MRT Blue -->
+        <path id="svg-leg-0" d="M 215,540 C 270,470 330,370 420,140" fill="none" stroke="#005caa" stroke-width="6" stroke-linecap="round" />
+        <!-- Leg 1 (Suntec to KŌBASHI): Bus 107 - Solid Blue Line -->
+        <path id="svg-leg-1" d="M 420,140 C 360,180 290,220 205,310" fill="none" stroke="#1a73e8" stroke-width="6" stroke-linecap="round" />
+        <!-- Leg 2 (KŌBASHI to next stop): Walk - Blue Dots -->
+        <path id="svg-leg-2" d="M 205,310 C 220,335 240,350 270,330" fill="none" stroke="#1a73e8" stroke-width="5" stroke-linecap="round" stroke-dasharray="1 10" />
+      </g>
+    </svg>
+
+    <!-- Interactive Google Map Instance -->
+    <div id="map"></div>
+
+    <!-- Map Overlay Layer -->
+    <div class="map-overlay">
+      
+      <!-- User Location Indicator (Blue Dot with Directional Heading Beam) -->
+      <div class="user-location-marker" id="user-marker-el">
+        <div class="user-beam-wrap">
+          <svg class="user-beam-svg" viewBox="0 0 100 120">
+            <defs>
+              <radialGradient id="mapBeamGrad" cx="50%" cy="10%" r="85%" fx="50%" fy="10%">
+                <stop offset="0%" stop-color="#4285f4" stop-opacity="0.55" />
+                <stop offset="45%" stop-color="#4285f4" stop-opacity="0.22" />
+                <stop offset="85%" stop-color="#4285f4" stop-opacity="0" />
+              </radialGradient>
+            </defs>
+            <polygon points="46,12 54,12 94,105 6,105" fill="url(#mapBeamGrad)" />
+            <path d="M 28,62 Q 50,75 72,62" fill="none" stroke="rgba(138, 180, 248, 0.6)" stroke-width="1.8" />
+            <path d="M 12,100 Q 50,118 88,100" fill="none" stroke="rgba(138, 180, 248, 0.45)" stroke-width="1.8" />
+          </svg>
+        </div>
+        <div class="user-blue-dot">
+          <div class="user-blue-dot-inner"></div>
+        </div>
+      </div>
+
+      <!-- Google Maps Logo Watermark -->
+      <div class="google-watermark">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
+        </svg>
+        <span style="font-weight: 500; font-size: 15px; margin-left: 2px;">Google</span>
+      </div>
+
+      <!-- Itinerary Overlays (Badges matching itinerary symbol, Stop Dots, and Rating Bubbles) -->
+      <div id="itinerary-dom-overlay" class="itinerary-container">
+        <!-- Banner 0: Train Symbol for Downtown Line -->
+        <div id="badge-route-0" class="route-badge-overlay" style="top: 155px; left: 340px;" onclick="window.onBadgeClick(0)">
+          <div class="route-badge-top">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="3" width="16" height="15" rx="3" fill="none" />
+              <path d="M8 21l2-3M16 21l-2-3M4 11h16M8 7h.01M16 7h.01" />
+            </svg>
+            <span>12 min</span>
+          </div>
+          <div class="route-badge-sub">DTL · DT17 → DT15</div>
+        </div>
+
+        <!-- Banner 1: Bus Symbol for Bus 107 -->
+        <div id="badge-route-1" class="route-badge-overlay" style="top: 240px; left: 310px;" onclick="window.onBadgeClick(1)">
+          <div class="route-badge-top">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="3" width="16" height="16" rx="3" fill="none" />
+              <path d="M4 11h16M8 16h.01M16 16h.01M7 21v-2M17 21v-2" />
+            </svg>
+            <span>18 min</span>
+          </div>
+          <div class="route-badge-sub">Bus 107 · 5 stops</div>
+        </div>
+
+        <!-- Banner 2: Walking Symbol for Walk -->
+        <div id="badge-route-2" class="route-badge-overlay" style="top: 320px; left: 245px;" onclick="window.onBadgeClick(2)">
+          <div class="route-badge-top">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7z"/>
+            </svg>
+            <span>8 min</span>
+          </div>
+          <div class="route-badge-sub">600 m</div>
+        </div>
+
+        <!-- Kahve Rating Badge & Label -->
+        <div class="poi-rating-badge" style="top: 520px; left: 185px;">
+          <div class="poi-rating-icon kahve-peach">
+            <span></span>
+          </div>
+          <span>4.5</span>
+          <span class="poi-name-label">Kahve</span>
+        </div>
+
+        <!-- Rating Badges matching reference screenshot -->
+        <div class="poi-rating-badge" style="top: 255px; left: 160px;">
+          <div class="poi-rating-icon pink">🍴</div>
+          <span>4.5</span>
+        </div>
+
+        <div class="poi-rating-badge" style="top: 330px; left: 155px;">
+          <div class="poi-rating-icon pink">🍴</div>
+          <span>4.6</span>
+        </div>
+
+        <div class="poi-rating-badge" style="top: 375px; left: 115px;">
+          <div class="poi-rating-icon pink">🍴</div>
+          <span>4.8</span>
+        </div>
+
+        <div class="poi-rating-badge" style="top: 415px; left: 75px;">
+          <div class="poi-rating-icon lavender">☕</div>
+          <span>4.3</span>
+        </div>
+
+        <div class="poi-rating-badge" style="top: 280px; left: 260px;">
+          <div class="poi-rating-icon lavender">🍸</div>
+          <span>4.5</span>
+        </div>
+
+        <div class="poi-rating-badge" style="top: 240px; left: 245px;">
+          <div class="poi-rating-icon teal">📷</div>
+          <span>+</span>
+        </div>
+
+        <!-- Stop Markers -->
+        <div class="stop-point-marker" style="top: 310px; left: 205px;" title="KŌBASHI">
+          <div class="stop-point-dot current"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
 
   <script>
-    let map;
-    let directionsService;
+    let map = null;
+    let mode = 'explore';
+    let currentStops = [];
+    let legObjects = [];
+    let customOverlays = [];
 
-    // 1. Core Itinerary State Data
-    // We pre-configure the exact text, colors, and transit modes based on the Figma designs
-    let plan = [
-      { id: 1, name: "Kahve", subtitle: "Coffee · Shenton Way", lat: 1.2770, lng: 103.8500, mode: "TRANSIT", transitDesc: "Downtown Line", transitDetails: "DT17 → DT15 · 12 min", badgeColor: "#005caa", icon: "🚆", isBus: false },
-      { id: 2, name: "Suntec City views", subtitle: "Walk · 1.2 km", lat: 1.2935, lng: 103.8575, mode: "TRANSIT", transitDesc: "107", transitDetails: "5 stops · 18 min", badgeColor: "#34a853", icon: "🚍", isBus: true },
-      { id: 3, name: "KŌBASHI", subtitle: "Bakery · South Bridge Road", lat: 1.2840, lng: 103.8440, mode: "WALKING", transitDesc: "Walk", transitDetails: "600 m · 8 min", badgeColor: "transparent", icon: "🚶", isBus: false },
-      { id: 4, name: "Green Oasis · CapitaSpring", subtitle: "Garden · 8 min walk", lat: 1.2843, lng: 103.8504, mode: "TRANSIT", transitDesc: "Thomson-East Coast Line", transitDetails: "TE19 → TE18 · 14 min", badgeColor: "#9D5B25", icon: "🚆", isBus: false },
-      { id: 5, name: "Loulouca", subtitle: "Dessert · Closes 11 pm", lat: 1.2805, lng: 103.8446, mode: null }
-    ];
+    // Master Coordinates for Singapore Food Trail
+    const POI_LOCATIONS = {
+      'kahve': { lat: 1.2785, lng: 103.8492, name: 'Kahve' },
+      'suntec': { lat: 1.2935, lng: 103.8575, name: 'Suntec City views' },
+      'kobashi': { lat: 1.2840, lng: 103.8455, name: 'KŌBASHI' },
+      'maxwell': { lat: 1.2804, lng: 103.8440, name: 'Maxwell Food Centre' },
+      'bounce-kobashi': { lat: 1.2804, lng: 103.8440, name: 'Maxwell Food Centre' },
+      'green-oasis': { lat: 1.2848, lng: 103.8502, name: 'Green Oasis · CapitaSpring' },
+      'loulouca': { lat: 1.2801, lng: 103.8423, name: 'Loulouca' }
+    };
+
+    function getCoordsForStop(stop) {
+      if (!stop) return { lat: 1.2840, lng: 103.8455 };
+      if (POI_LOCATIONS[stop.id]) return POI_LOCATIONS[stop.id];
+      const lower = (stop.title || '').toLowerCase();
+      if (lower.includes('maxwell')) return POI_LOCATIONS['maxwell'];
+      if (lower.includes('kahve')) return POI_LOCATIONS['kahve'];
+      if (lower.includes('suntec')) return POI_LOCATIONS['suntec'];
+      if (lower.includes('kobashi')) return POI_LOCATIONS['kobashi'];
+      if (lower.includes('green oasis') || lower.includes('capitaspring')) return POI_LOCATIONS['green-oasis'];
+      if (lower.includes('loulouca')) return POI_LOCATIONS['loulouca'];
+      return { lat: 1.2840, lng: 103.8455 };
+    }
 
     const nightModeStyles = [
-      { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
-      { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
-      { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
-      { featureType: "road", elementType: "geometry", stylers: [{ color: "#38414e" }] },
-      { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#9ca5b3" }] },
-      { featureType: "water", elementType: "geometry", stylers: [{ color: "#17263c" }] }
+      { elementType: "geometry", stylers: [{ color: "#16212e" }] },
+      { elementType: "labels.text.stroke", stylers: [{ color: "#16212e" }, { weight: 3 }] },
+      { elementType: "labels.text.fill", stylers: [{ color: "#8fa1b4" }] },
+      { featureType: "administrative.locality", elementType: "labels.text.fill", stylers: [{ color: "#a5b6c7" }] },
+      { featureType: "poi", elementType: "labels.text.fill", stylers: [{ color: "#6c8094" }] },
+      { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#0f2e34" }] },
+      { featureType: "poi.park", elementType: "labels.text.fill", stylers: [{ color: "#4f8087" }] },
+      { featureType: "road", elementType: "geometry", stylers: [{ color: "#22384e" }] },
+      { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#1b2c3d" }] },
+      { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#9aaec0" }] },
+      { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#2b4966" }] },
+      { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#1f374d" }] },
+      { featureType: "road.highway", elementType: "labels.text.fill", stylers: [{ color: "#b0c4d8" }] },
+      { featureType: "transit", elementType: "geometry", stylers: [{ color: "#243c54" }] },
+      { featureType: "transit.station", elementType: "labels.text.fill", stylers: [{ color: "#7eb382" }] },
+      { featureType: "water", elementType: "geometry", stylers: [{ color: "#0c1a27" }] },
+      { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#3e5b74" }] },
+      { featureType: "water", elementType: "labels.text.stroke", stylers: [{ color: "#0c1a27" }] }
     ];
 
     function initMap() {
-      directionsService = new google.maps.DirectionsService();
-      map = new google.maps.Map(document.getElementById('map'), {
-        center: { lat: 1.2840, lng: 103.8440 }, 
-        zoom: 14,
-        disableDefaultUI: true,
-        gestureHandling: "greedy",
-        styles: nightModeStyles // Start in dark mode
-      });
-      
-      renderPlan();
-    }
-
-    // 2. Render UI and API Routes dynamically
-    function renderPlan() {
-      // Clear old map lines
-      renderers.forEach(r => r.setMap(null)); 
-      renderers = [];
-      
-      const listContainer = document.getElementById('itinerary-list');
-      listContainer.innerHTML = '';
-
-      for (let i = 0; i < plan.length; i++) {
-        const origin = plan[i];
-        const dest = plan[i+1]; // May be undefined for the last stop
-
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.id = `card-${i}`;
-        
-        // Build the Location Header
-        let html = `
-          <div class="location-header">
-            <div class="node-dot"></div>
-            <div>
-              <h3>${origin.name}</h3>
-              <p class="subtitle">${origin.subtitle}</p>
-            </div>
-          </div>
-        `;
-
-        // If there is a next destination, build the routing block
-        if (dest) {
-          const badgeHtml = origin.badgeColor !== "transparent" 
-            ? `<span class="transit-badge" style="background-color: ${origin.badgeColor}">${origin.transitDesc}</span>`
-            : `<span style="font-weight: bold; font-size: 13px; color: #fff;">${origin.transitDesc}</span>`;
-
-          html += `
-            <div class="route-meta">
-              <span class="transport-icon">${origin.icon}</span>
-              <div class="route-details">
-                <div>${origin.isBus ? 'Bus ' : ''}${badgeHtml}</div>
-                <div>${origin.transitDetails}</div>
-                <div class="next-up">Next: ${dest.name}</div>
-              </div>
-            </div>
-          `;
-          
-          card.onclick = () => highlightLeg(i); 
-
-          // Fetch real coordinates to draw the path on the map
-          directionsService.route({
-            origin: { lat: origin.lat, lng: origin.lng },
-            destination: { lat: dest.lat, lng: dest.lng },
-            travelMode: google.maps.TravelMode[origin.mode],
-          }, (response, status) => {
-            if (status === "OK") {
-              const renderer = new google.maps.DirectionsRenderer({
-                map: map,
-                directions: response,
-                suppressMarkers: true, // We hide default Google markers for a cleaner look
-                polylineOptions: {
-                  strokeColor: origin.mode === 'WALKING' ? "#00e6b8" : origin.badgeColor, // Uses the exact MRT/Bus color
-                  strokeWeight: 6,
-                  strokeOpacity: 0.8
-                }
-              });
-              renderers[i] = renderer;
-            }
+      try {
+        if (typeof google !== 'undefined' && google.maps) {
+          map = new google.maps.Map(document.getElementById('map'), {
+            center: { lat: 1.3435, lng: 103.7315 },
+            zoom: 15.2,
+            disableDefaultUI: true,
+            gestureHandling: "greedy",
+            styles: nightModeStyles
           });
+
+          // Overlay class for custom DOM elements
+          class HTMLOverlay extends google.maps.OverlayView {
+            constructor(position, htmlContent, className, onClick) {
+              super();
+              this.position = position;
+              this.htmlContent = htmlContent;
+              this.className = className;
+              this.onClick = onClick;
+              this.div = null;
+            }
+            onAdd() {
+              this.div = document.createElement('div');
+              this.div.className = this.className;
+              this.div.innerHTML = this.htmlContent;
+              if (this.onClick) {
+                this.div.addEventListener('click', (e) => {
+                  e.stopPropagation();
+                  this.onClick();
+                });
+              }
+              const panes = this.getPanes();
+              panes.overlayMouseTarget.appendChild(this.div);
+            }
+            draw() {
+              const overlayProjection = this.getProjection();
+              if (!overlayProjection || !this.div) return;
+              const point = overlayProjection.fromLatLngToDivPixel(this.position);
+              this.div.style.left = point.x + 'px';
+              this.div.style.top = point.y + 'px';
+            }
+            onRemove() {
+              if (this.div && this.div.parentNode) {
+                this.div.parentNode.removeChild(this.div);
+                this.div = null;
+              }
+            }
+          }
+          window.HTMLOverlay = HTMLOverlay;
+
+          if (mode === 'itinerary' && currentStops.length > 0) {
+            renderItinerary(currentStops);
+          }
         }
-        
-        card.innerHTML = html;
-        listContainer.appendChild(card);
+      } catch (e) {
+        console.warn("Google Maps init exception:", e);
       }
     }
 
-    // 3. Highlight specific route leg and collapse drawer
-    function highlightLeg(index) {
-      document.getElementById('drawer').classList.add('collapsed');
-      
-      // Update UI Cards
-      document.querySelectorAll('.card').forEach((c, i) => {
-        c.classList.toggle('active', i === index);
+    // Helper: Returns symbol SVG matching itinerary mode
+    function getModeIconSvg(travelType) {
+      if (travelType === 'downtown' || travelType === 'thomson' || travelType === 'mrt') {
+        // MRT / Train icon matching itinerary train icon
+        return `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="3" width="16" height="15" rx="3" fill="none" />
+          <path d="M8 21l2-3M16 21l-2-3M4 11h16M8 7h.01M16 7h.01" />
+        </svg>`;
+      }
+      if (travelType === 'bus') {
+        // Bus icon matching itinerary bus icon
+        return `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="3" width="16" height="16" rx="3" fill="none" />
+          <path d="M4 11h16M8 16h.01M16 16h.01M7 21v-2M17 21v-2" />
+        </svg>`;
+      }
+      // Walking person icon matching itinerary walk icon
+      return `<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7z"/>
+      </svg>`;
+    }
+
+    // Generate waypoints between two points
+    function generatePath(origin, destination, travelType) {
+      const path = [origin];
+      const latDiff = destination.lat - origin.lat;
+      const lngDiff = destination.lng - origin.lng;
+
+      if (travelType === 'downtown') {
+        // Downtown line curve towards Marina Bay
+        path.push({ lat: origin.lat + latDiff * 0.3, lng: origin.lng + lngDiff * 0.6 });
+        path.push({ lat: origin.lat + latDiff * 0.7, lng: origin.lng + lngDiff * 0.85 });
+      } else if (travelType === 'bus') {
+        // Bus 107 path along street grid
+        path.push({ lat: origin.lat + latDiff * 0.4, lng: origin.lng });
+        path.push({ lat: origin.lat + latDiff * 0.7, lng: origin.lng + lngDiff * 0.5 });
+      } else {
+        // Walking paths along city blocks
+        path.push({ lat: origin.lat + latDiff * 0.5, lng: origin.lng + lngDiff * 0.1 });
+        path.push({ lat: origin.lat + latDiff * 0.7, lng: origin.lng + lngDiff * 0.6 });
+      }
+      path.push(destination);
+      return path;
+    }
+
+    function renderItinerary(stops) {
+      if (!stops || stops.length === 0) return;
+
+      // Clean existing overlays & polylines
+      legObjects.forEach(leg => {
+        if (leg.polyline) leg.polyline.setMap(null);
+        if (leg.glow) leg.glow.setMap(null);
+        if (leg.badgeOverlay) leg.badgeOverlay.setMap(null);
       });
-      
-      // Update Map Lines
-      renderers.forEach((r, i) => {
-        if (i === index) {
-          r.setOptions({ polylineOptions: { strokeWeight: 8, strokeOpacity: 1.0, zIndex: 100, strokeColor: r.polylineOptions.strokeColor } });
+      legObjects = [];
+
+      customOverlays.forEach(ov => ov.setMap(null));
+      customOverlays = [];
+
+      if (!map || typeof google === 'undefined' || !google.maps) {
+        // SVG Fallback mode
+        document.body.classList.add('mode-itinerary');
+        document.body.classList.remove('mode-explore');
+        document.getElementById('svg-explore-map').style.display = 'none';
+        document.getElementById('svg-itinerary-map').style.display = 'block';
+        return;
+      }
+
+      document.body.classList.add('mode-itinerary');
+      document.body.classList.remove('mode-explore');
+      document.getElementById('svg-explore-map').style.display = 'none';
+      document.getElementById('svg-itinerary-map').style.display = 'none';
+
+      const bounds = new google.maps.LatLngBounds();
+
+      // Render each leg between adjacent stops
+      for (let i = 0; i < stops.length - 1; i++) {
+        const fromStop = stops[i];
+        const toStop = stops[i + 1];
+        const origin = getCoordsForStop(fromStop);
+        const dest = getCoordsForStop(toStop);
+
+        bounds.extend(new google.maps.LatLng(origin.lat, origin.lng));
+        bounds.extend(new google.maps.LatLng(dest.lat, dest.lng));
+
+        let travelType = 'walk';
+        let badgeTime = '8 min';
+        let badgeDist = '600 m';
+
+        if (fromStop.id === 'kahve') {
+          travelType = 'downtown';
+          badgeTime = '12 min';
+          badgeDist = 'DTL · DT17 → DT15';
+        } else if (fromStop.id === 'suntec') {
+          travelType = 'bus';
+          badgeTime = '18 min';
+          badgeDist = 'Bus 107 · 5 stops';
+        } else if (fromStop.id === 'kobashi' && (toStop.id === 'bounce-kobashi' || toStop.title.includes('Maxwell'))) {
+          travelType = 'walk';
+          badgeTime = '4 min';
+          badgeDist = '350 m';
+        } else if ((fromStop.id === 'bounce-kobashi' || fromStop.title.includes('Maxwell')) && toStop.id === 'green-oasis') {
+          travelType = 'walk';
+          badgeTime = '11 min';
+          badgeDist = '750 m';
+        } else if (fromStop.id === 'green-oasis') {
+          travelType = 'thomson';
+          badgeTime = '14 min';
+          badgeDist = 'TEL · TE19 → TE18';
+        }
+
+        // Standard Google Maps route styling rules:
+        // 1. Walking: Marked by blue dots (#1a73e8)
+        // 2. Bus & Car: Solid blue line (#1a73e8)
+        // 3. MRT: Solid colour based on MRT line colour (#005caa for DTL, #9D5B25 for TEL)
+        let strokeColor = '#1a73e8';
+        let isDottedWalk = false;
+        let glowColor = '#1a73e8';
+
+        if (travelType === 'downtown') {
+          strokeColor = '#005caa'; // MRT Downtown Line blue
+          glowColor = '#005caa';
+        } else if (travelType === 'thomson') {
+          strokeColor = '#9D5B25'; // MRT Thomson-East Coast Line brown
+          glowColor = '#9D5B25';
+        } else if (travelType === 'bus') {
+          strokeColor = '#1a73e8'; // Bus: standard solid blue
+          glowColor = '#1a73e8';
         } else {
-          r.setOptions({ polylineOptions: { strokeOpacity: 0.2, zIndex: 1, strokeColor: r.polylineOptions.strokeColor } });
+          isDottedWalk = true;
+          strokeColor = '#1a73e8'; // Walk: standard blue dots
+          glowColor = '#1a73e8';
+        }
+
+        const pathPoints = generatePath(origin, dest, travelType).map(p => new google.maps.LatLng(p.lat, p.lng));
+
+        // Underlying soft glow polyline
+        const glowPolyline = new google.maps.Polyline({
+          path: pathPoints,
+          geodesic: true,
+          strokeColor: glowColor,
+          strokeOpacity: 0.22,
+          strokeWeight: 14,
+          map: map,
+          zIndex: 10 + i
+        });
+
+        // Main Polyline: Dotted circles for Walk, Solid Line for Bus / MRT
+        let polyline;
+        if (isDottedWalk) {
+          polyline = new google.maps.Polyline({
+            path: pathPoints,
+            geodesic: true,
+            strokeOpacity: 0,
+            icons: [{
+              icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                fillOpacity: 1,
+                scale: 3.5,
+                fillColor: '#1a73e8',
+                strokeColor: '#ffffff',
+                strokeWeight: 0.5
+              },
+              offset: '0',
+              repeat: '13px'
+            }],
+            map: map,
+            zIndex: 20 + i
+          });
+        } else {
+          polyline = new google.maps.Polyline({
+            path: pathPoints,
+            geodesic: true,
+            strokeColor: strokeColor,
+            strokeOpacity: 0.95,
+            strokeWeight: 6,
+            map: map,
+            zIndex: 20 + i
+          });
+        }
+
+        const legIndex = i;
+        const handleLegClick = () => {
+          highlightLeg(legIndex);
+          window.parent.postMessage({ type: 'ROUTE_CLICKED', index: legIndex }, '*');
+        };
+
+        polyline.addListener('click', handleLegClick);
+        glowPolyline.addListener('click', handleLegClick);
+
+        // Place Route Banner at midpoint with icon matching itinerary
+        const midPoint = pathPoints[Math.floor(pathPoints.length / 2)];
+        const iconSvg = getModeIconSvg(travelType);
+        const badgeContent = `
+          <div class="route-badge-top">
+            ${iconSvg}
+            <span>${badgeTime}</span>
+          </div>
+          <div class="route-badge-sub">${badgeDist}</div>
+        `;
+        const badgeOverlay = new window.HTMLOverlay(midPoint, badgeContent, `route-badge-overlay leg-badge-${i}`, handleLegClick);
+        badgeOverlay.setMap(map);
+
+        legObjects.push({
+          polyline,
+          glow: glowPolyline,
+          badgeOverlay,
+          strokeColor,
+          glowColor,
+          isDottedWalk,
+          pathPoints,
+          bounds: new google.maps.LatLngBounds(
+            new google.maps.LatLng(Math.min(origin.lat, dest.lat), Math.min(origin.lng, dest.lng)),
+            new google.maps.LatLng(Math.max(origin.lat, dest.lat), Math.max(origin.lng, dest.lng))
+          )
+        });
+      }
+
+      // Add Rating Badges & Stop Pins
+      stops.forEach((stop, index) => {
+        const coords = getCoordsForStop(stop);
+        const latLng = new google.maps.LatLng(coords.lat, coords.lng);
+
+        const isCurrent = stop.id === 'kobashi';
+        const pinContent = `
+          <div class="stop-point-dot ${isCurrent ? 'current' : ''}"></div>
+        `;
+        const pinOverlay = new window.HTMLOverlay(latLng, pinContent, 'stop-point-marker', () => {
+          highlightLeg(Math.min(index, stops.length - 2));
+          window.parent.postMessage({ type: 'ROUTE_CLICKED', index }, '*');
+        });
+        pinOverlay.setMap(map);
+        customOverlays.push(pinOverlay);
+      });
+
+      // Sample Ratings matching reference screenshot
+      const sampleRatings = [
+        { lat: 1.2785, lng: 103.8492, icon: 'peach-dot', rating: '4.5', label: 'Kahve' },
+        { lat: 1.2840, lng: 103.8455, icon: 'pink', rating: '4.8', label: '' },
+        { lat: 1.2818, lng: 103.8445, icon: 'pink', rating: '4.6', label: '' },
+        { lat: 1.2804, lng: 103.8440, icon: 'pink', rating: '4.5', label: '' },
+        { lat: 1.2835, lng: 103.8475, icon: 'lavender', rating: '4.3', label: '' },
+        { lat: 1.2860, lng: 103.8495, icon: 'teal', rating: '4.7', label: '' }
+      ];
+
+      sampleRatings.forEach(poi => {
+        const poiLatLng = new google.maps.LatLng(poi.lat, poi.lng);
+        let iconHtml = '<div class="poi-rating-icon pink">🍴</div>';
+        if (poi.icon === 'peach-dot') {
+          iconHtml = '<div class="poi-rating-icon kahve-peach"><span></span></div>';
+        } else if (poi.icon === 'lavender') {
+          iconHtml = '<div class="poi-rating-icon lavender">☕</div>';
+        } else if (poi.icon === 'teal') {
+          iconHtml = '<div class="poi-rating-icon teal">📷</div>';
+        }
+
+        const labelHtml = poi.label ? `<span class="poi-name-label">${poi.label}</span>` : '';
+        const content = `${iconHtml}<span>${poi.rating}</span>${labelHtml}`;
+        const ratingOverlay = new window.HTMLOverlay(poiLatLng, content, 'poi-rating-badge', null);
+        ratingOverlay.setMap(map);
+        customOverlays.push(ratingOverlay);
+      });
+
+      // Fit map bounds with padding for the top bar and bottom sheet
+      map.fitBounds(bounds, { top: 120, bottom: 220, left: 40, right: 40 });
+    }
+
+    function highlightLeg(index) {
+      if (!map || legObjects.length === 0) return;
+
+      legObjects.forEach((leg, i) => {
+        if (i === index) {
+          // Highlight active leg
+          if (leg.isDottedWalk) {
+            leg.polyline.setOptions({
+              icons: [{
+                icon: {
+                  path: google.maps.SymbolPath.CIRCLE,
+                  fillOpacity: 1,
+                  scale: 4.8,
+                  fillColor: '#1a73e8',
+                  strokeColor: '#ffffff',
+                  strokeWeight: 1
+                },
+                offset: '0',
+                repeat: '14px'
+              }],
+              zIndex: 100
+            });
+          } else {
+            leg.polyline.setOptions({
+              strokeColor: leg.strokeColor,
+              strokeWeight: 8,
+              strokeOpacity: 1.0,
+              zIndex: 100
+            });
+          }
+          leg.glow.setOptions({
+            strokeColor: leg.glowColor,
+            strokeWeight: 18,
+            strokeOpacity: 0.45,
+            zIndex: 99
+          });
+          if (leg.badgeOverlay && leg.badgeOverlay.div) {
+            leg.badgeOverlay.div.classList.add('highlighted');
+            leg.badgeOverlay.div.classList.remove('dimmed');
+          }
+        } else {
+          // Dim other legs
+          if (leg.isDottedWalk) {
+            leg.polyline.setOptions({
+              icons: [{
+                icon: {
+                  path: google.maps.SymbolPath.CIRCLE,
+                  fillOpacity: 0.22,
+                  scale: 3,
+                  fillColor: '#1a73e8',
+                  strokeColor: '#ffffff',
+                  strokeWeight: 0.3
+                },
+                offset: '0',
+                repeat: '13px'
+              }],
+              zIndex: 10
+            });
+          } else {
+            leg.polyline.setOptions({
+              strokeOpacity: 0.22,
+              strokeWeight: 4,
+              zIndex: 10
+            });
+          }
+          leg.glow.setOptions({
+            strokeOpacity: 0,
+            zIndex: 5
+          });
+          if (leg.badgeOverlay && leg.badgeOverlay.div) {
+            leg.badgeOverlay.div.classList.remove('highlighted');
+            leg.badgeOverlay.div.classList.add('dimmed');
+          }
         }
       });
+
+      // Animate map camera to focus on selected leg
+      if (legObjects[index]) {
+        const legBounds = new google.maps.LatLngBounds();
+        legObjects[index].pathPoints.forEach(pt => legBounds.extend(pt));
+        map.fitBounds(legBounds, { top: 110, bottom: 220, left: 60, right: 60 });
+      }
     }
 
-    function resetDrawer() {
-      document.getElementById('drawer').classList.remove('collapsed');
-      document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
-      renderers.forEach(r => r.setOptions({ polylineOptions: { strokeOpacity: 0.8, strokeWeight: 6, zIndex: 50, strokeColor: r.polylineOptions.strokeColor } }));
-    }
+    function resetHighlight() {
+      if (!map || legObjects.length === 0) return;
 
-    // 4. Simulate a Bounce insertion
-    function triggerBounce() {
-      // Insert Maxwell Food Centre after KOBASHI (Index 2)
-      plan.splice(3, 0, { 
-        id: 99, 
-        name: "Maxwell Food Centre", 
-        subtitle: "Bounce addition · Nearby now", 
-        lat: 1.2825, lng: 103.8444, 
-        mode: "WALKING", transitDesc: "Walk", transitDetails: "400 m · 5 min", badgeColor: "transparent", icon: "🚶", isBus: false 
+      const allBounds = new google.maps.LatLngBounds();
+
+      legObjects.forEach(leg => {
+        if (leg.isDottedWalk) {
+          leg.polyline.setOptions({
+            icons: [{
+              icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                fillOpacity: 1,
+                scale: 3.5,
+                fillColor: '#1a73e8',
+                strokeColor: '#ffffff',
+                strokeWeight: 0.5
+              },
+              offset: '0',
+              repeat: '13px'
+            }],
+            zIndex: 20
+          });
+        } else {
+          leg.polyline.setOptions({
+            strokeColor: leg.strokeColor,
+            strokeWeight: 6,
+            strokeOpacity: 0.95,
+            zIndex: 20
+          });
+        }
+        leg.glow.setOptions({
+          strokeColor: leg.glowColor,
+          strokeWeight: 14,
+          strokeOpacity: 0.22,
+          zIndex: 10
+        });
+        if (leg.badgeOverlay && leg.badgeOverlay.div) {
+          leg.badgeOverlay.div.classList.remove('highlighted', 'dimmed');
+        }
+        leg.pathPoints.forEach(pt => allBounds.extend(pt));
       });
-      
-      // Update KOBASHI's routing to walk to Maxwell instead of CapitaSpring
-      plan[2].transitDetails = "400 m · 5 min";
-      
-      resetDrawer();
-      renderPlan(); // Automatically recalculates everything, updates "Next" labels, and redraws map
+
+      map.fitBounds(allBounds, { top: 120, bottom: 220, left: 40, right: 40 });
     }
 
-   // Listen for the theme toggle message from React
-window.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'THEME_TOGGLE') {
-    const isDark = event.data.isDark;
-    // Apply nightModeStyles if true, or an empty array (default light) if false
-    map.setOptions({ styles: isDark ? nightModeStyles : [] });
-  }
-});
+    // Global helper for fallback badge clicks
+    window.onBadgeClick = function(index) {
+      highlightLeg(index);
+      window.parent.postMessage({ type: 'ROUTE_CLICKED', index }, '*');
+    };
+
+    // Message listener for React app
+    window.addEventListener('message', (event) => {
+      const data = event.data;
+      if (!data) return;
+
+      if (data.type === 'THEME_TOGGLE') {
+        const isDark = data.isDark;
+        if (map) {
+          map.setOptions({ styles: isDark ? nightModeStyles : [] });
+        }
+        document.body.classList.toggle('theme-light', !isDark);
+      }
+
+      if (data.type === 'SET_MODE') {
+        mode = data.mode || 'explore';
+        currentStops = data.stops || [];
+
+        if (mode === 'itinerary') {
+          document.body.classList.add('mode-itinerary');
+          document.body.classList.remove('mode-explore');
+          document.getElementById('svg-explore-map').style.display = 'none';
+          document.getElementById('svg-itinerary-map').style.display = 'block';
+
+          // Move user marker to KŌBASHI
+          const userMarker = document.getElementById('user-marker-el');
+          if (userMarker) {
+            userMarker.style.top = '310px';
+            userMarker.style.left = '205px';
+          }
+
+          if (map) {
+            renderItinerary(currentStops);
+          }
+        } else {
+          document.body.classList.remove('mode-itinerary');
+          document.body.classList.add('mode-explore');
+          document.getElementById('svg-explore-map').style.display = 'block';
+          document.getElementById('svg-itinerary-map').style.display = 'none';
+
+          // Move user marker back to Chinese Garden
+          const userMarker = document.getElementById('user-marker-el');
+          if (userMarker) {
+            userMarker.style.top = '382px';
+            userMarker.style.left = '248px';
+          }
+
+          if (map) {
+            map.panTo({ lat: 1.3435, lng: 103.7315 });
+            map.setZoom(15.2);
+            // Clear itinerary objects
+            legObjects.forEach(leg => {
+              if (leg.polyline) leg.polyline.setMap(null);
+              if (leg.glow) leg.glow.setMap(null);
+              if (leg.badgeOverlay) leg.badgeOverlay.setMap(null);
+            });
+            legObjects = [];
+            customOverlays.forEach(ov => ov.setMap(null));
+            customOverlays = [];
+          }
+        }
+      }
+
+      if (data.type === 'HIGHLIGHT_LEG') {
+        highlightLeg(data.index);
+      }
+
+      if (data.type === 'RESET_HIGHLIGHT') {
+        resetHighlight();
+      }
+
+      if (data.type === 'UPDATE_STOPS') {
+        currentStops = data.stops || [];
+        renderItinerary(currentStops);
+      }
+
+      if (data.type === 'RECENTER') {
+        if (map) {
+          if (mode === 'itinerary') {
+            map.panTo({ lat: 1.2840, lng: 103.8455 });
+            map.setZoom(15.2);
+          } else {
+            map.panTo({ lat: 1.3430, lng: 103.7318 });
+            map.setZoom(15.2);
+          }
+        }
+      }
+    });
   </script>
   <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCR9Vi_lsTBLbpgfDYP-0kdy81b2PkaE-w&callback=initMap"></script>
 </body>
