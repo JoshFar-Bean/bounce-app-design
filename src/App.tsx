@@ -375,29 +375,29 @@ function MapScreen({
   onYou: () => void
 }) {
   return (
-    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
       
-      {/* 1. Transparent Top Search Bar */}
+      {/* 1. Transparent Top Search Bar Area (Matches 2_2.jpg) */}
       <div style={{ position: 'absolute', top: 0, width: '100%', zIndex: 10, padding: '68px 22px 0', pointerEvents: 'none' }}>
-        <div style={{ display: 'flex', gap: '10px', pointerEvents: 'auto' }}>
+        <div style={{ display: 'flex', gap: '10px' }}>
             <Tap 
               label="Search here" 
               onPress={onAsk} 
               className="tap" 
-              style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--control)', borderRadius: '999px', padding: '0 20px', color: 'var(--text-low)', boxShadow: '0 2px 10px rgba(0,0,0,0.2)', height: '52px' }}
+              style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--control)', borderRadius: '999px', padding: '0 20px', color: 'var(--text-low)', boxShadow: '0 2px 10px rgba(0,0,0,0.2)', height: '52px', pointerEvents: 'auto' }}
             >
                 <Icon name="search" size={20} />
                 <span style={{ fontSize: '16px' }}>Search here</span>
             </Tap>
             
-            {/* Native-style Compass */}
-            <div className="round-action" style={{ background: 'var(--control)', color: 'var(--text)', boxShadow: '0 2px 10px rgba(0,0,0,0.2)', height: '52px', width: '52px', borderRadius: '50%' }}>
+            {/* Native-style Compass (For visual reference, non-interactive) */}
+            <div className="round-action" style={{ background: 'var(--control)', color: 'var(--text)', boxShadow: '0 2px 10px rgba(0,0,0,0.2)', height: '52px', width: '52px', borderRadius: '50%', display: 'grid', placeItems: 'center' }}>
               <Icon name="compass" />
             </div> 
         </div>
       </div>
 
-      {/* 2. Theme Toggle (Aligned right beneath the compass) */}
+      {/* 2. Theme Toggle (Interactive) */}
       <Tap
         label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
         onPress={onToggleTheme}
@@ -406,12 +406,35 @@ function MapScreen({
         <Icon name={theme === "dark" ? "sun" : "moon"} size={22} />
       </Tap>
 
-      {/* 3. Bottom Nav Hotspot (to open 'You' screen) */}
-      <Tap label="Open You" className="hotspot you-hotspot" onPress={onYou} style={{ zIndex: 20, pointerEvents: 'auto' }} />
+      {/* 3. Bottom Nav Area (Interactive Ask Maps & Explore/You Buttons) */}
+      <div style={{ position: 'absolute', bottom: 0, width: '100%', zIndex: 20, pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: '20px' }}>
+        
+        {/* Floating Ask Maps Button (Interactive) */}
+        <Tap 
+          label="Open Ask Maps" 
+          onPress={onAsk} 
+          style={{ pointerEvents: 'auto', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--control)', borderRadius: '24px', padding: '12px 20px', color: 'var(--text)', boxShadow: '0 2px 10px rgba(0,0,0,0.2)', cursor: 'pointer' }}
+        >
+          <AskMark />
+          <span style={{ fontWeight: 'bold' }}>Ask Maps</span>
+        </Tap>
+
+        {/* Explore and You Navigation (Interactive) */}
+        <div style={{ display: 'flex', gap: '16px', background: 'var(--surface)', padding: '10px 20px', borderRadius: '30px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', pointerEvents: 'auto' }}>
+            <Tap label="Explore" className="nav-item active" onPress={() => {}} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: 'var(--accent)' }}>
+                <Icon name="pin" size={24} />
+                <span style={{ fontSize: '12px', fontWeight: '500' }}>Explore</span>
+            </Tap>
+            <Tap label="You" className="nav-item" onPress={onYou} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: 'var(--text-secondary)' }}>
+                <Icon name="bookmark" size={24} />
+                <span style={{ fontSize: '12px', fontWeight: '500' }}>You</span>
+            </Tap>
+        </div>
+      </div>
       
       {/* 4. Save Confirmation Toast */}
       {saved && (
-        <div className="toast" style={{ zIndex: 20 }}>
+        <div className="toast" style={{ zIndex: 20, pointerEvents: 'none' }}>
           <span className="toast-icon">
             <Icon name="check" size={18} />
           </span>
@@ -1497,6 +1520,17 @@ function App() {
         ) ?? initialStops[2])
       : initialStops[2],
   )
+  const iframeRef = useRef<HTMLIFrameElement>(null)
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    if (iframeRef.current && iframeRef.current.contentWindow) {
+      iframeRef.current.contentWindow.postMessage(
+        { type: 'THEME_TOGGLE', isDark: theme === 'dark' },
+        '*'
+      )
+    }
+  }, [theme])
   const applyBounce = (place: string) => {
     let sourceIndex = planStops.findIndex((stop) => stop.id === selectedStop.id)
     if (sourceIndex < 0) return
@@ -1576,100 +1610,138 @@ function App() {
   const nextSelectedStop =
     selectedIndex >= 0 ? planStops[selectedIndex + 1] : undefined
 
-  return (
+ return (
     <main className={`app-shell ${theme === "light" ? "light-shell" : ""}`}>
-      <div className={`phone theme-${theme}`} aria-live="polite">
-        <StatusBar />
-        {screen === "map" && (
-          <MapScreen
-            saved={false}
-            theme={theme}
-            onToggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
-            onAsk={() => setScreen("ask")}
-            onYou={() => setScreen("you")}
-          />
-        )}
-        {screen === "ask" && (
-          <AskStart
-            onHistory={() => setScreen("history")}
-            onSend={() => setScreen("chat")}
-            onClose={() => setScreen("map")}
-          />
-        )}
-        {screen === "history" && (
-          <HistoryScreen
-            onOpen={() => setScreen("chat")}
-            onClose={() => setScreen("ask")}
-          />
-        )}
-        {screen === "chat" && (
-          <ChatScreen
-            onHistory={() => setScreen("history")}
-            onBack={() => setScreen("ask")}
-            onClose={() => setScreen("map")}
-            onSave={() => setScreen("saved")}
-          />
-        )}
-        {screen === "saved" && (
-          <MapScreen
-            saved
-            theme={theme}
-            onToggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
-            onAsk={() => setScreen("ask")}
-            onYou={() => setScreen("you")}
-          />
-        )}
-        {screen === "you" && (
-          <YouScreen
-            onPlan={() => setScreen("plan")}
-            onExplore={() => setScreen("map")}
-          />
-        )}
-        {screen === "plan" && (
-          <PlanScreen
-            stops={planStops}
-            theme={theme}
-            onToggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
-            onBack={() => setScreen("you")}
-            onPlace={(stop) => {
-              setSelectedStop(stop)
-              setScreen("place")
-            }}
-          />
-        )}
-        {screen === "place" && (
-          <PlaceScreen
-            stop={selectedStop}
-            nextStop={nextSelectedStop}
-            placementOptions={planStops.filter((stop) => !stop.past)}
-            onBounce={() => setScreen("bounce")}
-            onRevisit={applyRevisit}
-            onRevert={revertSelectedStop}
-            onBack={() => setScreen("plan")}
-          />
-        )}
-        {screen === "bounce" && (
-          <BounceScreen
-            sourceStop={selectedStop}
-            theme={theme}
-            onToggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
-            onClose={() => setScreen("place")}
-            onSelect={applyBounce}
-          />
-        )}
-        {screen === "updated" && (
-          <PlanScreen
-            stops={planStops}
-            theme={theme}
-            onToggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
-            updateMessage={updateMessage}
-            onBack={() => setScreen("you")}
-            onPlace={(stop) => {
-              setSelectedStop(stop)
-              setScreen("place")
-            }}
-          />
-        )}
+      
+      {/* 1. Phone Container (Wraps the Map to strictly bound it to the iPhone edges) */}
+      <div className={`phone theme-${theme}`} aria-live="polite" style={{ position: 'relative', overflow: 'hidden', background: 'transparent' }}>
+        
+        {/* Failsafe: Forces the native status bar and phone gradients to remain completely transparent */}
+        <style>{`
+          .status-bar, .phone::before { background: transparent !important; box-shadow: none !important; }
+        `}</style>
+
+        {/* 2. Global Background Map (Now strictly contained within the phone) */}
+        <iframe 
+          ref={iframeRef} 
+          src="/map-prototype.html" 
+          style={{ position: 'absolute', top: 0, left: 0, border: 'none', width: '100%', height: '100%', zIndex: 0 }}
+          title="Live Routing Map"
+        />
+
+        {/* 3. React Screen Overlays (pointerEvents: 'none' ensures the background map is fully interactive) */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}>
+            <StatusBar />
+            
+            {screen === "map" && (
+              <MapScreen
+                  saved={false}
+                  theme={theme}
+                  onToggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
+                  onAsk={() => setScreen("ask")}
+                  onYou={() => setScreen("you")}
+              />
+            )}
+            
+            {/* The rest of the screens are wrapped in pointerEvents: 'auto' so they behave like solid pages when active */}
+            {screen === "ask" && (
+              <div style={{ pointerEvents: 'auto', width: '100%', height: '100%' }}>
+                  <AskStart
+                      onHistory={() => setScreen("history")}
+                      onSend={() => setScreen("chat")}
+                      onClose={() => setScreen("map")}
+                  />
+              </div>
+            )}
+            {screen === "history" && (
+              <div style={{ pointerEvents: 'auto', width: '100%', height: '100%' }}>
+                  <HistoryScreen
+                      onOpen={() => setScreen("chat")}
+                      onClose={() => setScreen("ask")}
+                  />
+              </div>
+            )}
+            {screen === "chat" && (
+              <div style={{ pointerEvents: 'auto', width: '100%', height: '100%' }}>
+                  <ChatScreen
+                      onHistory={() => setScreen("history")}
+                      onBack={() => setScreen("ask")}
+                      onClose={() => setScreen("map")}
+                      onSave={() => setScreen("saved")}
+                  />
+              </div>
+            )}
+            {screen === "saved" && (
+              <MapScreen
+                  saved
+                  theme={theme}
+                  onToggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
+                  onAsk={() => setScreen("ask")}
+                  onYou={() => setScreen("you")}
+              />
+            )}
+            {screen === "you" && (
+              <div style={{ pointerEvents: 'auto', width: '100%', height: '100%' }}>
+                  <YouScreen
+                      onPlan={() => setScreen("plan")}
+                      onExplore={() => setScreen("map")}
+                  />
+              </div>
+            )}
+            {screen === "plan" && (
+              <div style={{ pointerEvents: 'auto', width: '100%', height: '100%' }}>
+                  <PlanScreen
+                      stops={planStops}
+                      theme={theme}
+                      onToggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
+                      onBack={() => setScreen("you")}
+                      onPlace={(stop) => {
+                      setSelectedStop(stop)
+                      setScreen("place")
+                      }}
+                  />
+              </div>
+            )}
+            {screen === "place" && (
+              <div style={{ pointerEvents: 'auto', width: '100%', height: '100%' }}>
+                  <PlaceScreen
+                      stop={selectedStop}
+                      nextStop={nextSelectedStop}
+                      placementOptions={planStops.filter((stop) => !stop.past)}
+                      onBounce={() => setScreen("bounce")}
+                      onRevisit={applyRevisit}
+                      onRevert={revertSelectedStop}
+                      onBack={() => setScreen("plan")}
+                  />
+              </div>
+            )}
+            {screen === "bounce" && (
+              <div style={{ pointerEvents: 'auto', width: '100%', height: '100%' }}>
+                  <BounceScreen
+                      sourceStop={selectedStop}
+                      theme={theme}
+                      onToggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
+                      onClose={() => setScreen("place")}
+                      onSelect={applyBounce}
+                  />
+              </div>
+            )}
+            {screen === "updated" && (
+              <div style={{ pointerEvents: 'auto', width: '100%', height: '100%' }}>
+                  <PlanScreen
+                      stops={planStops}
+                      theme={theme}
+                      onToggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
+                      updateMessage={updateMessage}
+                      onBack={() => setScreen("you")}
+                      onPlace={(stop) => {
+                      setSelectedStop(stop)
+                      setScreen("place")
+                      }}
+                  />
+              </div>
+            )}
+        </div>
       </div>
     </main>
   )
