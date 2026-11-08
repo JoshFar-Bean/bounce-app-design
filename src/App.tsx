@@ -1623,9 +1623,14 @@ function PlanScreen({
   }
 
   const handleRouteClick = (index: number) => {
-    setActiveLeg(index)
-    setMapExpanded(true)
-    onHighlightLeg?.(index)
+    if (activeLeg === index && index !== 2) {
+      setActiveLeg(null)
+      onResetHighlight?.()
+    } else {
+      setActiveLeg(index)
+      setMapExpanded(true)
+      onHighlightLeg?.(index)
+    }
   }
 
   const handleExpandDrawer = () => {

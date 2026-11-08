@@ -440,13 +440,13 @@
       <g id="svg-fallback-routes">
         <!-- Leg 0 (Kahve to Suntec): MRT Downtown Line - Solid MRT Blue -->
         <path id="svg-leg-0" d="M 215,540 C 270,470 330,370 420,140" fill="none" stroke="#005caa" stroke-width="6"
-          stroke-linecap="round" />
+          stroke-linecap="round" style="display: none;" />
         <!-- Leg 1 (Suntec to KŌBASHI): Bus 107 - Solid Blue Line -->
         <path id="svg-leg-1" d="M 420,140 C 360,180 290,220 205,310" fill="none" stroke="#1a73e8" stroke-width="6"
-          stroke-linecap="round" />
-        <!-- Leg 2 (KŌBASHI to next stop): Walk - Blue Dots -->
+          stroke-linecap="round" style="display: none;" />
+        <!-- Leg 2 (KŌBASHI to next stop): Walk - Blue Dots (Default visible immediate route) -->
         <path id="svg-leg-2" d="M 205,310 C 220,335 240,350 270,330" fill="none" stroke="#1a73e8" stroke-width="5"
-          stroke-linecap="round" stroke-dasharray="1 10" />
+          stroke-linecap="round" stroke-dasharray="1 10" style="display: block;" />
       </g>
     </svg>
 
@@ -496,49 +496,8 @@
         <span style="font-weight: 500; font-size: 15px; margin-left: 2px;">Google</span>
       </div>
 
-      <!-- Itinerary Overlays (Badges matching itinerary symbol, Stop Dots, and Rating Bubbles) -->
-      <div id="itinerary-dom-overlay" class="itinerary-container">
-        <!-- Banner 0: Train Symbol for Downtown Line -->
-        <div id="badge-route-0" class="route-badge-overlay" style="top: 155px; left: 340px;"
-          onclick="window.onBadgeClick(0)">
-          <div class="route-badge-top">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <rect x="4" y="3" width="16" height="15" rx="3" fill="none" />
-              <path d="M8 21l2-3M16 21l-2-3M4 11h16M8 7h.01M16 7h.01" />
-            </svg>
-            <span>12 min</span>
-          </div>
-          <div class="route-badge-sub">DTL · DT17 → DT15</div>
-        </div>
-
-        <!-- Banner 1: Bus Symbol for Bus 107 -->
-        <div id="badge-route-1" class="route-badge-overlay" style="top: 240px; left: 310px;"
-          onclick="window.onBadgeClick(1)">
-          <div class="route-badge-top">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <rect x="4" y="3" width="16" height="16" rx="3" fill="none" />
-              <path d="M4 11h16M8 16h.01M16 16h.01M7 21v-2M17 21v-2" />
-            </svg>
-            <span>18 min</span>
-          </div>
-          <div class="route-badge-sub">Bus 107 · 5 stops</div>
-        </div>
-
-        <!-- Banner 2: Walking Symbol for Walk -->
-        <div id="badge-route-2" class="route-badge-overlay" style="top: 320px; left: 245px;"
-          onclick="window.onBadgeClick(2)">
-          <div class="route-badge-top">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
-              <path
-                d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7z" />
-            </svg>
-            <span>8 min</span>
-          </div>
-          <div class="route-badge-sub">600 m</div>
-        </div>
-      </div>
+      <!-- Dynamic Itinerary Overlay Container (Empty in static HTML; populated dynamically) -->
+      <div id="itinerary-dom-overlay" class="itinerary-container"></div>
 
     </div>
   </div>
@@ -699,6 +658,71 @@
       return path;
     }
 
+    function getImmediateLegIndex(stops) {
+      if (!stops || stops.length === 0) return 0;
+      const idx = stops.findIndex(s => s.id === 'kobashi' || s.current);
+      if (idx !== -1 && idx < stops.length - 1) return idx;
+      return Math.min(2, Math.max(0, stops.length - 2));
+    }
+
+    // Dynamic Fallback Routes (SVG + Overlay Banners)
+    function updateFallbackRoutes(selectedIndex = null) {
+      const immediateIdx = getImmediateLegIndex(currentStops);
+      const domOverlay = document.getElementById('itinerary-dom-overlay');
+      if (!domOverlay) return;
+
+      const fallbackBanners = [
+        {
+          top: '155px', left: '340px',
+          time: '12 min', sub: 'DTL · DT17 → DT15',
+          svg: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="15" rx="3" fill="none" /><path d="M8 21l2-3M16 21l-2-3M4 11h16M8 7h.01M16 7h.01" /></svg>'
+        },
+        {
+          top: '240px', left: '310px',
+          time: '18 min', sub: 'Bus 107 · 5 stops',
+          svg: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="16" rx="3" fill="none" /><path d="M4 11h16M8 16h.01M16 16h.01M7 21v-2M17 21v-2" /></svg>'
+        },
+        {
+          top: '320px', left: '245px',
+          time: '8 min', sub: '600 m',
+          svg: '<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7z"/></svg>'
+        }
+      ];
+
+      // Always show immediate route; if another route is tapped, show it as an additional route
+      const visibleIndices = new Set();
+      visibleIndices.add(immediateIdx);
+      if (selectedIndex !== null) {
+        visibleIndices.add(selectedIndex);
+      }
+
+      for (let i = 0; i < 3; i++) {
+        const svgPath = document.getElementById(`svg-leg-${i}`);
+        if (svgPath) {
+          svgPath.style.display = visibleIndices.has(i) ? 'block' : 'none';
+        }
+      }
+
+      let html = '';
+      visibleIndices.forEach(idx => {
+        const banner = fallbackBanners[idx];
+        if (!banner) return;
+        const isHighlighted = selectedIndex === idx;
+        html += `
+          <div id="badge-route-${idx}" class="route-badge-overlay ${isHighlighted ? 'highlighted' : ''}"
+            style="top: ${banner.top}; left: ${banner.left};"
+            onclick="window.onBadgeClick(${idx})">
+            <div class="route-badge-top">
+              ${banner.svg}
+              <span>${banner.time}</span>
+            </div>
+            <div class="route-badge-sub">${banner.sub}</div>
+          </div>
+        `;
+      });
+      domOverlay.innerHTML = html;
+    }
+
     function renderItinerary(stops) {
       if (!stops || stops.length === 0) return;
 
@@ -719,6 +743,7 @@
         document.body.classList.remove('mode-explore');
         document.getElementById('svg-explore-map').style.display = 'none';
         document.getElementById('svg-itinerary-map').style.display = 'block';
+        updateFallbackRoutes(null);
         return;
       }
 
@@ -727,7 +752,7 @@
       document.getElementById('svg-explore-map').style.display = 'none';
       document.getElementById('svg-itinerary-map').style.display = 'none';
 
-      const bounds = new google.maps.LatLngBounds();
+      const immediateIdx = getImmediateLegIndex(stops);
 
       // Render each leg between adjacent stops
       for (let i = 0; i < stops.length - 1; i++) {
@@ -735,9 +760,6 @@
         const toStop = stops[i + 1];
         const origin = getCoordsForStop(fromStop);
         const dest = getCoordsForStop(toStop);
-
-        bounds.extend(new google.maps.LatLng(origin.lat, origin.lng));
-        bounds.extend(new google.maps.LatLng(dest.lat, dest.lng));
 
         let travelType = 'walk';
         let badgeTime = '8 min';
@@ -790,14 +812,17 @@
 
         const pathPoints = generatePath(origin, dest, travelType).map(p => new google.maps.LatLng(p.lat, p.lng));
 
+        // Default visibility: ONLY show the most immediate route after Kobashi
+        const isImmediate = i === immediateIdx;
+
         // Underlying soft glow polyline
         const glowPolyline = new google.maps.Polyline({
           path: pathPoints,
           geodesic: true,
           strokeColor: glowColor,
-          strokeOpacity: 0.22,
+          strokeOpacity: isImmediate ? 0.25 : 0,
           strokeWeight: 14,
-          map: map,
+          map: isImmediate ? map : null,
           zIndex: 10 + i
         });
 
@@ -812,7 +837,7 @@
               icon: {
                 path: google.maps.SymbolPath.CIRCLE,
                 fillOpacity: 1,
-                scale: 3.5,
+                scale: 3.8,
                 fillColor: '#1a73e8',
                 strokeColor: '#ffffff',
                 strokeWeight: 0.5
@@ -820,7 +845,7 @@
               offset: '0',
               repeat: '13px'
             }],
-            map: map,
+            map: isImmediate ? map : null,
             zIndex: 20 + i
           });
         } else {
@@ -830,7 +855,7 @@
             strokeColor: strokeColor,
             strokeOpacity: 0.95,
             strokeWeight: 6,
-            map: map,
+            map: isImmediate ? map : null,
             zIndex: 20 + i
           });
         }
@@ -855,7 +880,9 @@
           <div class="route-badge-sub">${badgeDist}</div>
         `;
         const badgeOverlay = new window.HTMLOverlay(midPoint, badgeContent, `route-badge-overlay leg-badge-${i}`, handleLegClick);
-        badgeOverlay.setMap(map);
+        if (isImmediate) {
+          badgeOverlay.setMap(map);
+        }
 
         legObjects.push({
           polyline,
@@ -889,137 +916,183 @@
         customOverlays.push(pinOverlay);
       });
 
-      // Fit map bounds with padding for the top bar and bottom sheet
-      map.fitBounds(bounds, { top: 120, bottom: 220, left: 40, right: 40 });
+      // Fit map bounds to the immediate route after Kobashi
+      if (legObjects[immediateIdx]) {
+        const immediateBounds = new google.maps.LatLngBounds();
+        legObjects[immediateIdx].pathPoints.forEach(pt => immediateBounds.extend(pt));
+        const kobashiPos = getCoordsForStop(stops[immediateIdx]);
+        immediateBounds.extend(new google.maps.LatLng(kobashiPos.lat, kobashiPos.lng));
+        map.fitBounds(immediateBounds, { top: 120, bottom: 220, left: 60, right: 60 });
+      }
     }
 
-    function highlightLeg(index) {
-      if (!map || legObjects.length === 0) return;
+    function highlightLeg(selectedIndex) {
+      const immediateIdx = getImmediateLegIndex(currentStops);
+
+      if (!map || legObjects.length === 0) {
+        updateFallbackRoutes(selectedIndex);
+        return;
+      }
+
+      const combinedBounds = new google.maps.LatLngBounds();
 
       legObjects.forEach((leg, i) => {
-        if (i === index) {
-          // Highlight active leg
+        const isImmediate = i === immediateIdx;
+        const isSelected = i === selectedIndex;
+
+        if (isImmediate || isSelected) {
+          // Show both immediate route and the selected additional route
+          leg.polyline.setMap(map);
+          leg.glow.setMap(map);
+          leg.badgeOverlay.setMap(map);
+
+          if (isSelected) {
+            // Selected route: full highlight
+            if (leg.isDottedWalk) {
+              leg.polyline.setOptions({
+                icons: [{
+                  icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    fillOpacity: 1,
+                    scale: 4.8,
+                    fillColor: '#1a73e8',
+                    strokeColor: '#ffffff',
+                    strokeWeight: 1
+                  },
+                  offset: '0',
+                  repeat: '14px'
+                }],
+                zIndex: 100
+              });
+            } else {
+              leg.polyline.setOptions({
+                strokeColor: leg.strokeColor,
+                strokeWeight: 8,
+                strokeOpacity: 1.0,
+                zIndex: 100
+              });
+            }
+            leg.glow.setOptions({
+              strokeColor: leg.glowColor,
+              strokeWeight: 18,
+              strokeOpacity: 0.45,
+              zIndex: 99
+            });
+            if (leg.badgeOverlay && leg.badgeOverlay.div) {
+              leg.badgeOverlay.div.classList.add('highlighted');
+              leg.badgeOverlay.div.classList.remove('dimmed');
+            }
+          } else {
+            // Immediate route when another route is selected: keep visible alongside
+            if (leg.isDottedWalk) {
+              leg.polyline.setOptions({
+                icons: [{
+                  icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    fillOpacity: 0.95,
+                    scale: 3.5,
+                    fillColor: '#1a73e8',
+                    strokeColor: '#ffffff',
+                    strokeWeight: 0.5
+                  },
+                  offset: '0',
+                  repeat: '13px'
+                }],
+                zIndex: 30
+              });
+            } else {
+              leg.polyline.setOptions({
+                strokeColor: leg.strokeColor,
+                strokeWeight: 6,
+                strokeOpacity: 0.95,
+                zIndex: 30
+              });
+            }
+            leg.glow.setOptions({
+              strokeColor: leg.glowColor,
+              strokeWeight: 14,
+              strokeOpacity: 0.22,
+              zIndex: 25
+            });
+            if (leg.badgeOverlay && leg.badgeOverlay.div) {
+              leg.badgeOverlay.div.classList.remove('highlighted', 'dimmed');
+            }
+          }
+
+          leg.pathPoints.forEach(pt => combinedBounds.extend(pt));
+        } else {
+          // Hide other routes
+          leg.polyline.setMap(null);
+          leg.glow.setMap(null);
+          leg.badgeOverlay.setMap(null);
+        }
+      });
+
+      // Frame camera to include both immediate route and selected additional route
+      map.fitBounds(combinedBounds, { top: 110, bottom: 220, left: 50, right: 50 });
+    }
+
+    function resetHighlight() {
+      const immediateIdx = getImmediateLegIndex(currentStops);
+
+      if (!map || legObjects.length === 0) {
+        updateFallbackRoutes(null);
+        return;
+      }
+
+      const immediateBounds = new google.maps.LatLngBounds();
+
+      legObjects.forEach((leg, i) => {
+        if (i === immediateIdx) {
+          leg.polyline.setMap(map);
+          leg.glow.setMap(map);
+          leg.badgeOverlay.setMap(map);
+
           if (leg.isDottedWalk) {
             leg.polyline.setOptions({
               icons: [{
                 icon: {
                   path: google.maps.SymbolPath.CIRCLE,
                   fillOpacity: 1,
-                  scale: 4.8,
+                  scale: 3.8,
                   fillColor: '#1a73e8',
                   strokeColor: '#ffffff',
-                  strokeWeight: 1
-                },
-                offset: '0',
-                repeat: '14px'
-              }],
-              zIndex: 100
-            });
-          } else {
-            leg.polyline.setOptions({
-              strokeColor: leg.strokeColor,
-              strokeWeight: 8,
-              strokeOpacity: 1.0,
-              zIndex: 100
-            });
-          }
-          leg.glow.setOptions({
-            strokeColor: leg.glowColor,
-            strokeWeight: 18,
-            strokeOpacity: 0.45,
-            zIndex: 99
-          });
-          if (leg.badgeOverlay && leg.badgeOverlay.div) {
-            leg.badgeOverlay.div.classList.add('highlighted');
-            leg.badgeOverlay.div.classList.remove('dimmed');
-          }
-        } else {
-          // Dim other legs
-          if (leg.isDottedWalk) {
-            leg.polyline.setOptions({
-              icons: [{
-                icon: {
-                  path: google.maps.SymbolPath.CIRCLE,
-                  fillOpacity: 0.22,
-                  scale: 3,
-                  fillColor: '#1a73e8',
-                  strokeColor: '#ffffff',
-                  strokeWeight: 0.3
+                  strokeWeight: 0.5
                 },
                 offset: '0',
                 repeat: '13px'
               }],
-              zIndex: 10
+              zIndex: 20
             });
           } else {
             leg.polyline.setOptions({
-              strokeOpacity: 0.22,
-              strokeWeight: 4,
-              zIndex: 10
+              strokeColor: leg.strokeColor,
+              strokeWeight: 6,
+              strokeOpacity: 0.95,
+              zIndex: 20
             });
           }
           leg.glow.setOptions({
-            strokeOpacity: 0,
-            zIndex: 5
+            strokeColor: leg.glowColor,
+            strokeWeight: 14,
+            strokeOpacity: 0.22,
+            zIndex: 10
           });
           if (leg.badgeOverlay && leg.badgeOverlay.div) {
-            leg.badgeOverlay.div.classList.remove('highlighted');
-            leg.badgeOverlay.div.classList.add('dimmed');
+            leg.badgeOverlay.div.classList.remove('highlighted', 'dimmed');
           }
-        }
-      });
 
-      // Animate map camera to focus on selected leg
-      if (legObjects[index]) {
-        const legBounds = new google.maps.LatLngBounds();
-        legObjects[index].pathPoints.forEach(pt => legBounds.extend(pt));
-        map.fitBounds(legBounds, { top: 110, bottom: 220, left: 60, right: 60 });
-      }
-    }
-
-    function resetHighlight() {
-      if (!map || legObjects.length === 0) return;
-
-      const allBounds = new google.maps.LatLngBounds();
-
-      legObjects.forEach(leg => {
-        if (leg.isDottedWalk) {
-          leg.polyline.setOptions({
-            icons: [{
-              icon: {
-                path: google.maps.SymbolPath.CIRCLE,
-                fillOpacity: 1,
-                scale: 3.5,
-                fillColor: '#1a73e8',
-                strokeColor: '#ffffff',
-                strokeWeight: 0.5
-              },
-              offset: '0',
-              repeat: '13px'
-            }],
-            zIndex: 20
-          });
+          leg.pathPoints.forEach(pt => immediateBounds.extend(pt));
+          const kobashiPos = getCoordsForStop(currentStops[immediateIdx]);
+          immediateBounds.extend(new google.maps.LatLng(kobashiPos.lat, kobashiPos.lng));
         } else {
-          leg.polyline.setOptions({
-            strokeColor: leg.strokeColor,
-            strokeWeight: 6,
-            strokeOpacity: 0.95,
-            zIndex: 20
-          });
+          leg.polyline.setMap(null);
+          leg.glow.setMap(null);
+          leg.badgeOverlay.setMap(null);
         }
-        leg.glow.setOptions({
-          strokeColor: leg.glowColor,
-          strokeWeight: 14,
-          strokeOpacity: 0.22,
-          zIndex: 10
-        });
-        if (leg.badgeOverlay && leg.badgeOverlay.div) {
-          leg.badgeOverlay.div.classList.remove('highlighted', 'dimmed');
-        }
-        leg.pathPoints.forEach(pt => allBounds.extend(pt));
       });
 
-      map.fitBounds(allBounds, { top: 120, bottom: 220, left: 40, right: 40 });
+      map.fitBounds(immediateBounds, { top: 120, bottom: 220, left: 60, right: 60 });
     }
 
     // Global helper for fallback badge clicks
@@ -1060,12 +1133,16 @@
 
           if (map) {
             renderItinerary(currentStops);
+          } else {
+            updateFallbackRoutes(null);
           }
         } else {
           document.body.classList.remove('mode-itinerary');
           document.body.classList.add('mode-explore');
           document.getElementById('svg-explore-map').style.display = 'block';
           document.getElementById('svg-itinerary-map').style.display = 'none';
+          const domOverlay = document.getElementById('itinerary-dom-overlay');
+          if (domOverlay) domOverlay.innerHTML = '';
 
           // Move user marker back to Chinese Garden
           const userMarker = document.getElementById('user-marker-el');
@@ -1115,6 +1192,9 @@
         }
       }
     });
+
+    // Initialize clean fallback state (immediate route only)
+    updateFallbackRoutes(null);
   </script>
   <script async defer
     src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCR9Vi_lsTBLbpgfDYP-0kdy81b2PkaE-w&callback=initMap"></script>
