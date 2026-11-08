@@ -538,51 +538,6 @@
           </div>
           <div class="route-badge-sub">600 m</div>
         </div>
-
-        <!-- Kahve Rating Badge & Label -->
-        <div class="poi-rating-badge" style="top: 520px; left: 185px;">
-          <div class="poi-rating-icon kahve-peach">
-            <span></span>
-          </div>
-          <span>4.5</span>
-          <span class="poi-name-label">Kahve</span>
-        </div>
-
-        <!-- Rating Badges matching reference screenshot -->
-        <div class="poi-rating-badge" style="top: 255px; left: 160px;">
-          <div class="poi-rating-icon pink">🍴</div>
-          <span>4.5</span>
-        </div>
-
-        <div class="poi-rating-badge" style="top: 330px; left: 155px;">
-          <div class="poi-rating-icon pink">🍴</div>
-          <span>4.6</span>
-        </div>
-
-        <div class="poi-rating-badge" style="top: 375px; left: 115px;">
-          <div class="poi-rating-icon pink">🍴</div>
-          <span>4.8</span>
-        </div>
-
-        <div class="poi-rating-badge" style="top: 415px; left: 75px;">
-          <div class="poi-rating-icon lavender">☕</div>
-          <span>4.3</span>
-        </div>
-
-        <div class="poi-rating-badge" style="top: 280px; left: 260px;">
-          <div class="poi-rating-icon lavender">🍸</div>
-          <span>4.5</span>
-        </div>
-
-        <div class="poi-rating-badge" style="top: 240px; left: 245px;">
-          <div class="poi-rating-icon teal">📷</div>
-          <span>+</span>
-        </div>
-
-        <!-- Stop Markers -->
-        <div class="stop-point-marker" style="top: 310px; left: 205px;" title="KŌBASHI">
-          <div class="stop-point-dot current"></div>
-        </div>
       </div>
 
     </div>
@@ -917,49 +872,21 @@
         });
       }
 
-      // Add Rating Badges & Stop Pins
+      // Add Stop Pins on Map (Skip current stop to let the user blue dot represent current location)
       stops.forEach((stop, index) => {
         const coords = getCoordsForStop(stop);
         const latLng = new google.maps.LatLng(coords.lat, coords.lng);
 
         const isCurrent = stop.id === 'kobashi';
-        const pinContent = `
-          <div class="stop-point-dot ${isCurrent ? 'current' : ''}"></div>
-        `;
+        if (isCurrent) return;
+
+        const pinContent = `<div class="stop-point-dot"></div>`;
         const pinOverlay = new window.HTMLOverlay(latLng, pinContent, 'stop-point-marker', () => {
           highlightLeg(Math.min(index, stops.length - 2));
           window.parent.postMessage({ type: 'ROUTE_CLICKED', index }, '*');
         });
         pinOverlay.setMap(map);
         customOverlays.push(pinOverlay);
-      });
-
-      // Sample Ratings matching reference screenshot
-      const sampleRatings = [
-        { lat: 1.2785, lng: 103.8492, icon: 'peach-dot', rating: '4.5', label: 'Kahve' },
-        { lat: 1.2840, lng: 103.8455, icon: 'pink', rating: '4.8', label: '' },
-        { lat: 1.2818, lng: 103.8445, icon: 'pink', rating: '4.6', label: '' },
-        { lat: 1.2804, lng: 103.8440, icon: 'pink', rating: '4.5', label: '' },
-        { lat: 1.2835, lng: 103.8475, icon: 'lavender', rating: '4.3', label: '' },
-        { lat: 1.2860, lng: 103.8495, icon: 'teal', rating: '4.7', label: '' }
-      ];
-
-      sampleRatings.forEach(poi => {
-        const poiLatLng = new google.maps.LatLng(poi.lat, poi.lng);
-        let iconHtml = '<div class="poi-rating-icon pink">🍴</div>';
-        if (poi.icon === 'peach-dot') {
-          iconHtml = '<div class="poi-rating-icon kahve-peach"><span></span></div>';
-        } else if (poi.icon === 'lavender') {
-          iconHtml = '<div class="poi-rating-icon lavender">☕</div>';
-        } else if (poi.icon === 'teal') {
-          iconHtml = '<div class="poi-rating-icon teal">📷</div>';
-        }
-
-        const labelHtml = poi.label ? `<span class="poi-name-label">${poi.label}</span>` : '';
-        const content = `${iconHtml}<span>${poi.rating}</span>${labelHtml}`;
-        const ratingOverlay = new window.HTMLOverlay(poiLatLng, content, 'poi-rating-badge', null);
-        ratingOverlay.setMap(map);
-        customOverlays.push(ratingOverlay);
       });
 
       // Fit map bounds with padding for the top bar and bottom sheet
