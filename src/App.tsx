@@ -2183,48 +2183,92 @@ function BounceScreen({
   sourceStop,
   theme,
   onToggleTheme,
+  onRecenter,
   onSelect,
   onClose,
+  selectedOption,
+  onSelectOption,
 }: {
   sourceStop: TimelineStop
   theme: Theme
   onToggleTheme: () => void
+  onRecenter?: () => void
   onSelect: (place: string) => void
   onClose: () => void
+  selectedOption: number
+  onSelectOption: (index: number) => void
 }) {
   const options = getBounceOptions(sourceStop)
   const insertsAfterCurrent = sourceStop.id === "kobashi"
-  const [selectedOption, setSelectedOption] = useState(1)
   const confirmSelection = () =>
     selectedOption === 0 ? onClose() : onSelect(options[selectedOption].title)
   return (
     <div className="screen-page bounce-page">
-      <div
-        className="bounce-map-stage"
-        aria-label="Map showing the itinerary area"
-      >
-        <picture>
-          <source
-            media="(prefers-reduced-data: reduce)"
-            srcSet={
-              theme === "light"
-                ? "/assets/prototype/saved-overview-map-light.jpg"
-                : "/assets/prototype/saved-overview-map.jpg"
-            }
-          />
-          <img
-            src={
-              theme === "light"
-                ? "/assets/prototype/saved-overview-map-light.jpg"
-                : "/assets/prototype/saved-overview-map.jpg"
-            }
-            alt="Overview map of the itinerary with existing streets, route and location pins"
-          />
-        </picture>
-        <MapControls theme={theme} onToggleTheme={onToggleTheme} />
+      {/* 1. Top Left Back Button (Cleanly isolated, zero overlap) */}
+      <div style={{ position: 'absolute', top: '52px', left: '14px', zIndex: 30, pointerEvents: 'auto' }}>
+        <BackButton onPress={onClose} theme={theme} label="Back to place details" />
       </div>
-      <BackButton onPress={onClose} theme={theme} label="Back to place details" />
-      <div className="bounce-sheet">
+
+      {/* 2. Floating Action Controls: Theme toggle and compass on right side */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '52px',
+          right: '14px',
+          zIndex: 30,
+          pointerEvents: 'auto',
+        }}
+      >
+        <div
+          style={{
+            background: theme === 'dark' ? 'var(--control)' : '#ffffff',
+            borderRadius: '24px',
+            padding: '3px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px',
+            boxShadow: theme === 'dark' ? '0 4px 14px rgba(0,0,0,0.35)' : '0 4px 14px rgba(0,0,0,0.12)',
+            border: theme === 'dark' ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)',
+          }}
+        >
+          {/* Compass / Recenter */}
+          <div
+            onClick={() => onRecenter?.()}
+            className="tap"
+            style={{
+              width: '40px',
+              height: '38px',
+              display: 'grid',
+              placeItems: 'center',
+              color: theme === 'dark' ? 'var(--text-high)' : '#202124',
+              cursor: 'pointer',
+            }}
+            title="Compass heading"
+          >
+            <Icon name="compass" size={20} />
+          </div>
+
+          {/* Theme Toggle Button */}
+          <div
+            onClick={onToggleTheme}
+            className="tap"
+            style={{
+              width: '40px',
+              height: '38px',
+              display: 'grid',
+              placeItems: 'center',
+              color: theme === 'dark' ? 'var(--text-high)' : '#202124',
+              cursor: 'pointer',
+            }}
+            title="Toggle theme"
+          >
+            <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={20} />
+          </div>
+        </div>
+      </div>
+
+      <div className="bounce-sheet" style={{ pointerEvents: 'auto' }}>
         <div className="bounce-grabber">
           <span />
         </div>
@@ -2252,7 +2296,7 @@ function BounceScreen({
                   className={`option-pill option-${index} ${
                     selectedOption === index ? "selected" : ""
                   }`}
-                  onPress={() => setSelectedOption(index)}
+                  onPress={() => onSelectOption(index)}
                   key={option.title}
                 >
                   <div className="option-top">
@@ -2356,6 +2400,7 @@ function App() {
   )
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [selectedLegIndex, setSelectedLegIndex] = useState<number | null>(null)
+  const [bounceOptionIndex, setBounceOptionIndex] = useState(1)
 
   const highlightRouteLeg = (index: number) => {
     setSelectedLegIndex(index)
@@ -2377,6 +2422,19 @@ function App() {
     }
   }
 
+  const handleSelectBounceOption = (index: number) => {
+    setBounceOptionIndex(index)
+    if (iframeRef.current && iframeRef.current.contentWindow) {
+      iframeRef.current.contentWindow.postMessage(
+        {
+          type: "SET_BOUNCE_SELECTED",
+          index,
+        },
+        "*"
+      )
+    }
+  }
+
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     if (iframeRef.current && iframeRef.current.contentWindow) {
@@ -2388,23 +2446,37 @@ function App() {
   }, [theme])
 
   useEffect(() => {
-    const isItinerary = screen === "plan" || screen === "updated"
     if (iframeRef.current && iframeRef.current.contentWindow) {
-      iframeRef.current.contentWindow.postMessage(
-        {
-          type: "SET_MODE",
-          mode: isItinerary ? "itinerary" : "explore",
-          stops: planStops,
-        },
-        "*"
-      )
+      if (screen === "bounce") {
+        iframeRef.current.contentWindow.postMessage(
+          {
+            type: "SET_MODE",
+            mode: "bounce",
+            selectedIndex: bounceOptionIndex,
+          },
+          "*"
+        )
+      } else {
+        const isItinerary = screen === "plan" || screen === "updated"
+        iframeRef.current.contentWindow.postMessage(
+          {
+            type: "SET_MODE",
+            mode: isItinerary ? "itinerary" : "explore",
+            stops: planStops,
+          },
+          "*"
+        )
+      }
     }
-  }, [screen, planStops])
+  }, [screen, planStops, bounceOptionIndex])
 
   useEffect(() => {
     const handleIframeMessage = (event: MessageEvent) => {
       if (event.data && event.data.type === "ROUTE_CLICKED") {
         setSelectedLegIndex(event.data.index)
+      }
+      if (event.data && event.data.type === "BOUNCE_ROUTE_CLICKED") {
+        setBounceOptionIndex(event.data.index)
       }
     }
     window.addEventListener("message", handleIframeMessage)
@@ -2615,13 +2687,23 @@ function App() {
               </div>
             )}
             {screen === "bounce" && (
-              <div style={{ pointerEvents: 'auto', width: '100%', height: '100%' }}>
+              <div style={{ pointerEvents: 'none', width: '100%', height: '100%' }}>
                   <BounceScreen
                       sourceStop={selectedStop}
                       theme={theme}
                       onToggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
+                      onRecenter={() => {
+                        if (iframeRef.current && iframeRef.current.contentWindow) {
+                          iframeRef.current.contentWindow.postMessage({ type: 'RECENTER_BOUNCE' }, '*')
+                        }
+                      }}
                       onClose={() => setScreen("place")}
-                      onSelect={applyBounce}
+                      onSelect={(place) => {
+                        applyBounce(place)
+                        setScreen("updated")
+                      }}
+                      selectedOption={bounceOptionIndex}
+                      onSelectOption={handleSelectBounceOption}
                   />
               </div>
             )}

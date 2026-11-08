@@ -63,8 +63,9 @@
       transition: top 0.4s ease, left 0.4s ease;
     }
 
-    /* Hide the user blue dot and beam on the itinerary screen */
-    body.mode-itinerary .user-location-marker {
+    /* Hide the user blue dot and beam on itinerary and bounce screens */
+    body.mode-itinerary .user-location-marker,
+    body.mode-bounce .user-location-marker {
       display: none !important;
     }
 
@@ -453,6 +454,19 @@
         <path id="svg-leg-2" d="M 205,310 C 220,335 240,350 270,330" fill="none" stroke="#1a73e8" stroke-width="5"
           stroke-linecap="round" stroke-dasharray="1 10" style="display: block;" />
       </g>
+
+      <!-- SVG Fallback Bounce Routes from KŌBASHI -->
+      <g id="svg-bounce-routes" style="display: none;">
+        <!-- Option 0: To Green Oasis - Walk Dots -->
+        <path id="svg-bounce-0" d="M 205,310 C 220,335 240,350 270,330" fill="none" stroke="#1a73e8" stroke-width="5"
+          stroke-linecap="round" stroke-dasharray="1 10" />
+        <!-- Option 1: To Maxwell Food Centre - Walk Dots -->
+        <path id="svg-bounce-1" d="M 205,310 C 200,340 195,370 185,395" fill="none" stroke="#1a73e8" stroke-width="6"
+          stroke-linecap="round" stroke-dasharray="1 10" />
+        <!-- Option 2: To Loulouca - Bus Solid Blue Line -->
+        <path id="svg-bounce-2" d="M 205,310 C 190,345 170,385 150,420" fill="none" stroke="#1a73e8" stroke-width="6"
+          stroke-linecap="round" />
+      </g>
     </svg>
 
     <!-- Interactive Google Map Instance -->
@@ -611,6 +625,8 @@
 
           if (mode === 'itinerary' && currentStops.length > 0) {
             renderItinerary(currentStops);
+          } else if (mode === 'bounce') {
+            renderBounce(currentBounceIndex);
           }
         }
       } catch (e) {
@@ -1106,6 +1122,313 @@
       window.parent.postMessage({ type: 'ROUTE_CLICKED', index }, '*');
     };
 
+    let currentBounceIndex = 1;
+
+    const BOUNCE_ROUTES_DATA = [
+      {
+        index: 0,
+        title: 'Green Oasis · CapitaSpring',
+        dest: { lat: 1.2848, lng: 103.8502 },
+        mode: 'walk',
+        time: '8 min',
+        dist: '600 m',
+        midpoint: { lat: 1.2846, lng: 103.8478 },
+        path: [
+          { lat: 1.2840, lng: 103.8455 },
+          { lat: 1.2846, lng: 103.8470 },
+          { lat: 1.2850, lng: 103.8485 },
+          { lat: 1.2848, lng: 103.8502 }
+        ]
+      },
+      {
+        index: 1,
+        title: 'Maxwell Food Centre',
+        dest: { lat: 1.2804, lng: 103.8440 },
+        mode: 'walk',
+        time: '4 min',
+        dist: '350 m',
+        midpoint: { lat: 1.2822, lng: 103.8450 },
+        path: [
+          { lat: 1.2840, lng: 103.8455 },
+          { lat: 1.2825, lng: 103.8449 },
+          { lat: 1.2812, lng: 103.8444 },
+          { lat: 1.2804, lng: 103.8440 }
+        ]
+      },
+      {
+        index: 2,
+        title: 'Loulouca',
+        dest: { lat: 1.2801, lng: 103.8423 },
+        mode: 'bus',
+        time: '9 min',
+        dist: 'Bus 80 · 4 stops',
+        midpoint: { lat: 1.2815, lng: 103.8430 },
+        path: [
+          { lat: 1.2840, lng: 103.8455 },
+          { lat: 1.2828, lng: 103.8446 },
+          { lat: 1.2812, lng: 103.8433 },
+          { lat: 1.2801, lng: 103.8423 }
+        ]
+      }
+    ];
+
+    function renderBounce(selectedIndex = 1) {
+      currentBounceIndex = selectedIndex;
+
+      // Clean existing overlays & polylines
+      legObjects.forEach(leg => {
+        if (leg.polyline) leg.polyline.setMap(null);
+        if (leg.glow) leg.glow.setMap(null);
+        if (leg.badgeOverlay) leg.badgeOverlay.setMap(null);
+      });
+      legObjects = [];
+
+      customOverlays.forEach(ov => ov.setMap(null));
+      customOverlays = [];
+
+      const userMarker = document.getElementById('user-marker-el');
+      if (userMarker) userMarker.style.display = 'none';
+
+      const origin = { lat: 1.2840, lng: 103.8455, name: 'KŌBASHI' };
+
+      if (!map || typeof google === 'undefined' || !google.maps) {
+        document.body.classList.add('mode-bounce');
+        document.body.classList.remove('mode-explore', 'mode-itinerary');
+        document.getElementById('svg-explore-map').style.display = 'none';
+        document.getElementById('svg-itinerary-map').style.display = 'block';
+        updateFallbackBounce(selectedIndex);
+        return;
+      }
+
+      document.body.classList.add('mode-bounce');
+      document.body.classList.remove('mode-explore', 'mode-itinerary');
+      document.getElementById('svg-explore-map').style.display = 'none';
+      document.getElementById('svg-itinerary-map').style.display = 'none';
+
+      // 1. Origin Stop Pin at KŌBASHI
+      const originPin = new window.HTMLOverlay(
+        new google.maps.LatLng(origin.lat, origin.lng),
+        `<div class="stop-point-dot current" title="KŌBASHI"></div>`,
+        'stop-point-marker'
+      );
+      originPin.setMap(map);
+      customOverlays.push(originPin);
+
+      // 2. Render all 3 option routes branching from KŌBASHI
+      BOUNCE_ROUTES_DATA.forEach(r => {
+        const isSelected = r.index === selectedIndex;
+        const pathPoints = r.path.map(p => new google.maps.LatLng(p.lat, p.lng));
+
+        // Destination Stop Pin
+        const destPin = new window.HTMLOverlay(
+          new google.maps.LatLng(r.dest.lat, r.dest.lng),
+          `<div class="stop-point-dot" title="${r.title}"></div>`,
+          'stop-point-marker',
+          () => {
+            highlightBounceOption(r.index);
+            window.parent.postMessage({ type: 'BOUNCE_ROUTE_CLICKED', index: r.index }, '*');
+          }
+        );
+        destPin.setMap(map);
+        customOverlays.push(destPin);
+
+        // Glow polyline
+        const glow = new google.maps.Polyline({
+          path: pathPoints,
+          geodesic: true,
+          strokeColor: '#4285f4',
+          strokeOpacity: isSelected ? 0.45 : 0.18,
+          strokeWeight: isSelected ? 18 : 14,
+          map: map,
+          zIndex: isSelected ? 35 : 25
+        });
+
+        // Main polyline
+        let polyline;
+        if (r.mode === 'walk') {
+          polyline = new google.maps.Polyline({
+            path: pathPoints,
+            geodesic: true,
+            strokeOpacity: 0,
+            icons: [{
+              icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                fillOpacity: 1,
+                scale: isSelected ? 4.8 : 3.8,
+                fillColor: '#1a73e8',
+                strokeColor: '#ffffff',
+                strokeWeight: isSelected ? 1 : 0.5
+              },
+              offset: '0',
+              repeat: '13px'
+            }],
+            map: map,
+            zIndex: isSelected ? 40 : 30
+          });
+        } else {
+          polyline = new google.maps.Polyline({
+            path: pathPoints,
+            geodesic: true,
+            strokeColor: '#1a73e8',
+            strokeOpacity: 0.95,
+            strokeWeight: isSelected ? 8 : 6,
+            map: map,
+            zIndex: isSelected ? 40 : 30
+          });
+        }
+
+        const handleRouteClick = () => {
+          highlightBounceOption(r.index);
+          window.parent.postMessage({ type: 'BOUNCE_ROUTE_CLICKED', index: r.index }, '*');
+        };
+
+        polyline.addListener('click', handleRouteClick);
+        glow.addListener('click', handleRouteClick);
+
+        // Midpoint badge
+        const badgeLatLng = new google.maps.LatLng(r.midpoint.lat, r.midpoint.lng);
+        const iconSvg = getModeIconSvg(r.mode);
+        const badgeContent = `
+          <div class="route-badge-top">
+            ${iconSvg}
+            <span>${r.time}</span>
+          </div>
+          <div class="route-badge-sub">${r.dist}</div>
+        `;
+        const badgeOverlay = new window.HTMLOverlay(
+          badgeLatLng,
+          badgeContent,
+          `route-badge-overlay bounce-badge-${r.index} ${isSelected ? 'highlighted' : ''}`,
+          handleRouteClick
+        );
+        badgeOverlay.setMap(map);
+
+        legObjects.push({
+          polyline,
+          glow,
+          badgeOverlay,
+          mode: r.mode,
+          pathPoints,
+          routeIndex: r.index
+        });
+      });
+
+      // Camera: Fit bounds to show KŌBASHI and all 3 destinations in the top opening
+      const bounds = new google.maps.LatLngBounds();
+      bounds.extend(new google.maps.LatLng(origin.lat, origin.lng));
+      BOUNCE_ROUTES_DATA.forEach(r => {
+        r.path.forEach(pt => bounds.extend(new google.maps.LatLng(pt.lat, pt.lng)));
+      });
+
+      map.fitBounds(bounds, { top: 65, bottom: 620, left: 45, right: 45 });
+    }
+
+    function highlightBounceOption(newIndex) {
+      currentBounceIndex = newIndex;
+      legObjects.forEach(leg => {
+        const isSelected = leg.routeIndex === newIndex;
+        if (leg.mode === 'walk') {
+          leg.polyline.setOptions({
+            icons: [{
+              icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                fillOpacity: 1,
+                scale: isSelected ? 4.8 : 3.8,
+                fillColor: '#1a73e8',
+                strokeColor: '#ffffff',
+                strokeWeight: isSelected ? 1 : 0.5
+              },
+              offset: '0',
+              repeat: '13px'
+            }],
+            zIndex: isSelected ? 40 : 30
+          });
+        } else {
+          leg.polyline.setOptions({
+            strokeWeight: isSelected ? 8 : 6,
+            zIndex: isSelected ? 40 : 30
+          });
+        }
+        leg.glow.setOptions({
+          strokeOpacity: isSelected ? 0.45 : 0.18,
+          strokeWeight: isSelected ? 18 : 14,
+          zIndex: isSelected ? 35 : 25
+        });
+        if (leg.badgeOverlay && leg.badgeOverlay.div) {
+          if (isSelected) {
+            leg.badgeOverlay.div.classList.add('highlighted');
+          } else {
+            leg.badgeOverlay.div.classList.remove('highlighted');
+          }
+        }
+      });
+    }
+
+    function updateFallbackBounce(selectedIndex = 1) {
+      const domOverlay = document.getElementById('itinerary-dom-overlay');
+      if (!domOverlay) return;
+      domOverlay.innerHTML = '';
+
+      const leg0 = document.getElementById('svg-leg-0');
+      const leg1 = document.getElementById('svg-leg-1');
+      const leg2 = document.getElementById('svg-leg-2');
+      if (leg0) leg0.style.display = 'none';
+      if (leg1) leg1.style.display = 'none';
+      if (leg2) leg2.style.display = 'none';
+
+      let bounceGroup = document.getElementById('svg-bounce-routes');
+      if (bounceGroup) {
+        bounceGroup.style.display = 'block';
+      }
+
+      const badges = [
+        {
+          index: 0,
+          left: '240px',
+          top: '290px',
+          time: '8 min',
+          dist: '600 m',
+          iconSvg: getModeIconSvg('walk')
+        },
+        {
+          index: 1,
+          left: '170px',
+          top: '345px',
+          time: '4 min',
+          dist: '350 m',
+          iconSvg: getModeIconSvg('walk')
+        },
+        {
+          index: 2,
+          left: '120px',
+          top: '375px',
+          time: '9 min',
+          dist: 'Bus 80 · 4 stops',
+          iconSvg: getModeIconSvg('bus')
+        }
+      ];
+
+      badges.forEach(b => {
+        const isSelected = b.index === selectedIndex;
+        const badgeEl = document.createElement('div');
+        badgeEl.className = `route-badge-overlay ${isSelected ? 'highlighted' : ''}`;
+        badgeEl.style.left = b.left;
+        badgeEl.style.top = b.top;
+        badgeEl.innerHTML = `
+          <div class="route-badge-top">
+            ${b.iconSvg}
+            <span>${b.time}</span>
+          </div>
+          <div class="route-badge-sub">${b.dist}</div>
+        `;
+        badgeEl.onclick = () => {
+          updateFallbackBounce(b.index);
+          window.parent.postMessage({ type: 'BOUNCE_ROUTE_CLICKED', index: b.index }, '*');
+        };
+        domOverlay.appendChild(badgeEl);
+      });
+    }
+
     // Message listener for React app
     window.addEventListener('message', (event) => {
       const data = event.data;
@@ -1123,11 +1446,16 @@
         mode = data.mode || 'explore';
         currentStops = data.stops || [];
 
-        if (mode === 'itinerary') {
+        if (mode === 'bounce') {
+          renderBounce(data.selectedIndex !== undefined ? data.selectedIndex : 1);
+        } else if (mode === 'itinerary') {
           document.body.classList.add('mode-itinerary');
-          document.body.classList.remove('mode-explore');
+          document.body.classList.remove('mode-explore', 'mode-bounce');
           document.getElementById('svg-explore-map').style.display = 'none';
           document.getElementById('svg-itinerary-map').style.display = 'block';
+
+          const bounceGroup = document.getElementById('svg-bounce-routes');
+          if (bounceGroup) bounceGroup.style.display = 'none';
 
           // Hide user marker in itinerary screen
           const userMarker = document.getElementById('user-marker-el');
@@ -1141,10 +1469,14 @@
             updateFallbackRoutes(null);
           }
         } else {
-          document.body.classList.remove('mode-itinerary');
+          document.body.classList.remove('mode-itinerary', 'mode-bounce');
           document.body.classList.add('mode-explore');
           document.getElementById('svg-explore-map').style.display = 'block';
           document.getElementById('svg-itinerary-map').style.display = 'none';
+
+          const bounceGroup = document.getElementById('svg-bounce-routes');
+          if (bounceGroup) bounceGroup.style.display = 'none';
+
           const domOverlay = document.getElementById('itinerary-dom-overlay');
           if (domOverlay) domOverlay.innerHTML = '';
 
@@ -1172,6 +1504,14 @@
         }
       }
 
+      if (data.type === 'SET_BOUNCE_SELECTED') {
+        highlightBounceOption(data.index);
+      }
+
+      if (data.type === 'RECENTER_BOUNCE') {
+        renderBounce(currentBounceIndex);
+      }
+
       if (data.type === 'HIGHLIGHT_LEG') {
         highlightLeg(data.index);
       }
@@ -1190,6 +1530,8 @@
           if (mode === 'itinerary') {
             map.panTo({ lat: 1.2840, lng: 103.8455 });
             map.setZoom(15.2);
+          } else if (mode === 'bounce') {
+            renderBounce(currentBounceIndex);
           } else {
             map.panTo({ lat: 1.3430, lng: 103.7318 });
             map.setZoom(15.2);
