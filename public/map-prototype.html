@@ -63,6 +63,11 @@
       transition: top 0.4s ease, left 0.4s ease;
     }
 
+    /* Hide the user blue dot and beam on the itinerary screen */
+    body.mode-itinerary .user-location-marker {
+      display: none !important;
+    }
+
     .user-beam-wrap {
       position: absolute;
       top: 10px;
@@ -1124,11 +1129,10 @@
           document.getElementById('svg-explore-map').style.display = 'none';
           document.getElementById('svg-itinerary-map').style.display = 'block';
 
-          // Move user marker to KŌBASHI
+          // Hide user marker in itinerary screen
           const userMarker = document.getElementById('user-marker-el');
           if (userMarker) {
-            userMarker.style.top = '310px';
-            userMarker.style.left = '205px';
+            userMarker.style.display = 'none';
           }
 
           if (map) {
@@ -1144,9 +1148,10 @@
           const domOverlay = document.getElementById('itinerary-dom-overlay');
           if (domOverlay) domOverlay.innerHTML = '';
 
-          // Move user marker back to Chinese Garden
+          // Show user marker in explore screen at Chinese Garden
           const userMarker = document.getElementById('user-marker-el');
           if (userMarker) {
+            userMarker.style.display = 'block';
             userMarker.style.top = '382px';
             userMarker.style.left = '248px';
           }
