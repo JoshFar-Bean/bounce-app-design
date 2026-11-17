@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, type ReactNode } from "react"
+import { useRef, useState, useEffect, useMemo, type ReactNode } from "react"
 
 type Screen =
   | "map"
@@ -2983,6 +2983,8 @@ type SwipeableTimelineRowProps = {
   actionsRef?: (el: HTMLDivElement | null) => void
   onBounce?: () => void
   onSearch?: () => void
+  isTimeAdjustable?: boolean
+  onTimeClick?: () => void
 }
 
 function SwipeableTimelineRow({
@@ -3000,6 +3002,8 @@ function SwipeableTimelineRow({
   actionsRef,
   onBounce,
   onSearch,
+  isTimeAdjustable = false,
+  onTimeClick,
 }: SwipeableTimelineRowProps) {
   const [offsetX, setOffsetX] = useState(0)
   const isDragging = useRef(false)
@@ -3135,7 +3139,15 @@ function SwipeableTimelineRow({
       } ${stop.changed ? "changed" : ""}`}
       ref={currentRef}
     >
-      <span className="time">{stop.time}</span>
+      <span
+        className={`time ${isTimeAdjustable ? "adjustable" : ""}`}
+        onClick={isTimeAdjustable ? onTimeClick : undefined}
+        title={isTimeAdjustable ? "Tap to adjust time" : undefined}
+        role={isTimeAdjustable ? "button" : undefined}
+        tabIndex={isTimeAdjustable ? 0 : undefined}
+      >
+        {stop.time}
+      </span>
       <i className="timeline-dot" />
 
       <div className="timeline-card-col">
@@ -3239,68 +3251,72 @@ function SwipeableTimelineRow({
           </Tap>
         )}
 
-        {/* Button connected to the bottom of the location button */}
-        <button
-          type="button"
-          className={`timeline-connected-plus-btn ${
-            isAddExpanded ? "active" : ""
-          }`}
-          onClick={(e) => {
-            e.stopPropagation()
-            onToggleAdd?.()
-          }}
-          aria-label={`Add stop after ${stop.title}`}
-          aria-expanded={isAddExpanded}
-        >
-          <svg
-            viewBox="0 0 24 24"
-            width="15"
-            height="15"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="plus-icon-svg"
-          >
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-        </button>
+        {/* Button connected to the bottom of the location button (removed for past locations) */}
+        {!stop.past && (
+          <>
+            <button
+              type="button"
+              className={`timeline-connected-plus-btn ${
+                isAddExpanded ? "active" : ""
+              }`}
+              onClick={(e) => {
+                e.stopPropagation()
+                onToggleAdd?.()
+              }}
+              aria-label={`Add stop after ${stop.title}`}
+              aria-expanded={isAddExpanded}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="15"
+                height="15"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="plus-icon-svg"
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </button>
 
-        {/* Slide-Down Action Buttons ("Bounce" and "Search") */}
-        <div
-          ref={actionsRef}
-          className={`timeline-insert-actions ${
-            isAddExpanded ? "expanded" : "collapsed"
-          }`}
-        >
-          <button
-            type="button"
-            className="insert-action-btn bounce-btn"
-            onClick={(e) => {
-              e.stopPropagation()
-              onBounce?.()
-            }}
-            aria-label={`Bounce options after ${stop.title}`}
-          >
-            <Icon name="shuffle" size={17} />
-            <span>Bounce</span>
-          </button>
+            {/* Slide-Down Action Buttons ("Bounce" and "Search") */}
+            <div
+              ref={actionsRef}
+              className={`timeline-insert-actions ${
+                isAddExpanded ? "expanded" : "collapsed"
+              }`}
+            >
+              <button
+                type="button"
+                className="insert-action-btn bounce-btn"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onBounce?.()
+                }}
+                aria-label={`Bounce options after ${stop.title}`}
+              >
+                <Icon name="shuffle" size={17} />
+                <span>Bounce</span>
+              </button>
 
-          <button
-            type="button"
-            className="insert-action-btn search-btn"
-            onClick={(e) => {
-              e.stopPropagation()
-              onSearch?.()
-            }}
-            aria-label={`Search places to add after ${stop.title}`}
-          >
-            <Icon name="search" size={17} />
-            <span>Search</span>
-          </button>
-        </div>
+              <button
+                type="button"
+                className="insert-action-btn search-btn"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onSearch?.()
+                }}
+                aria-label={`Search places to add after ${stop.title}`}
+              >
+                <Icon name="search" size={17} />
+                <span>Search</span>
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )
@@ -4469,6 +4485,320 @@ function InviteDrawer({
   )
 }
 
+function parseTimeString(timeStr: string): {
+  hour: number
+  minute: number
+  period: "AM" | "PM"
+} {
+  const clean = (timeStr || "").trim().toLowerCase()
+  const match = clean.match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/)
+  if (match) {
+    let h = parseInt(match[1], 10)
+    let m = parseInt(match[2], 10)
+    const p: "AM" | "PM" = match[3] === "pm" ? "PM" : "AM"
+    if (h < 1 || h > 12) h = 12
+    if (m < 0 || m > 59) m = 0
+    return { hour: h, minute: m, period: p }
+  }
+  return { hour: 8, minute: 0, period: "PM" }
+}
+
+function timeToMinutes(
+  hour: number,
+  minute: number,
+  period: "AM" | "PM",
+): number {
+  let h24 = hour
+  if (period === "PM" && h24 < 12) h24 += 12
+  if (period === "AM" && h24 === 12) h24 = 0
+  return h24 * 60 + minute
+}
+
+function WheelColumn<T extends string | number>({
+  items,
+  value,
+  onChange,
+  itemHeight = 38,
+}: {
+  items: T[]
+  value: T
+  onChange: (val: T) => void
+  itemHeight?: number
+}) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const isUserScrolling = useRef(false)
+  const scrollTimeout = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (isUserScrolling.current) return
+    const index = items.indexOf(value)
+    if (index >= 0 && containerRef.current) {
+      containerRef.current.scrollTop = index * itemHeight
+    }
+  }, [value, items, itemHeight])
+
+  const handleScroll = () => {
+    if (!containerRef.current) return
+    isUserScrolling.current = true
+    if (scrollTimeout.current) clearTimeout(scrollTimeout.current)
+
+    scrollTimeout.current = window.setTimeout(() => {
+      if (!containerRef.current) return
+      const scrollTop = containerRef.current.scrollTop
+      const selectedIndex = Math.round(scrollTop / itemHeight)
+      const clampedIndex = Math.max(0, Math.min(items.length - 1, selectedIndex))
+      const selectedItem = items[clampedIndex]
+      if (selectedItem !== value) {
+        onChange(selectedItem)
+      }
+      isUserScrolling.current = false
+    }, 50)
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      onScroll={handleScroll}
+      className="time-picker-wheel-col"
+      style={{
+        height: itemHeight * 5,
+        overflowY: "auto",
+        scrollSnapType: "y mandatory",
+        scrollbarWidth: "none",
+        paddingTop: itemHeight * 2,
+        paddingBottom: itemHeight * 2,
+      }}
+    >
+      {items.map((item) => {
+        const isSelected = item === value
+        const displayLabel =
+          typeof item === "number" && items.length > 20
+            ? item < 10
+              ? `0${item}`
+              : String(item)
+            : String(item)
+        return (
+          <div
+            key={String(item)}
+            onClick={() => {
+              onChange(item)
+              if (containerRef.current) {
+                const idx = items.indexOf(item)
+                containerRef.current.scrollTo({
+                  top: idx * itemHeight,
+                  behavior: "smooth",
+                })
+              }
+            }}
+            className={`wheel-item ${isSelected ? "selected" : ""}`}
+            style={{
+              height: itemHeight,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              scrollSnapAlign: "center",
+              cursor: "pointer",
+              fontSize: isSelected ? 21 : 16,
+              fontWeight: isSelected ? 700 : 400,
+              opacity: isSelected ? 1 : 0.35,
+              transition: "all 0.12s ease",
+            }}
+          >
+            {displayLabel}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+const HOURS_LIST = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+const MINUTES_LIST = Array.from({ length: 60 }, (_, i) => i)
+const PERIODS_LIST: ("AM" | "PM")[] = ["AM", "PM"]
+
+function TimePickerDrawer({
+  isOpen,
+  stop,
+  index,
+  stops,
+  theme,
+  onConfirm,
+  onCancel,
+}: {
+  isOpen: boolean
+  stop: TimelineStop
+  index: number
+  stops: TimelineStop[]
+  theme: Theme
+  onConfirm: (newTime: string) => void
+  onCancel: () => void
+}) {
+  const initial = useMemo(() => parseTimeString(stop.time), [stop.time])
+  const [hour, setHour] = useState<number>(initial.hour)
+  const [minute, setMinute] = useState<number>(initial.minute)
+  const [period, setPeriod] = useState<"AM" | "PM">(initial.period)
+
+  useEffect(() => {
+    const p = parseTimeString(stop.time)
+    setHour(p.hour)
+    setMinute(p.minute)
+    setPeriod(p.period)
+  }, [stop.time])
+
+  const selectedMinutes = useMemo(
+    () => timeToMinutes(hour, minute, period),
+    [hour, minute, period],
+  )
+
+  const formattedDisplayTime = useMemo(() => {
+    const paddedMinute = minute < 10 ? `0${minute}` : `${minute}`
+    return `${hour}:${paddedMinute} ${period}`
+  }, [hour, minute, period])
+
+  // Validation:
+  // "Ensure that the time selected does not exceed travel time to next location + time of next location
+  // (e.g travel time to location 8 mins, time of next location 7.30pm. time selected for previous destination should not be more than 7.12pm).
+  // If time exceeds, blur out and disable the 'confirm' button and have a red note appear above the time picker slider
+  // with text 'insufficient time to next stop' like the reference 'red text.png', tapping confirm will update the timing in the the itinerary plan."
+  const nextStop = index < stops.length - 1 ? stops[index + 1] : null
+
+  const isExceeded = useMemo(() => {
+    if (!nextStop) return false
+    const nextParsed = parseTimeString(nextStop.time)
+    const nextStopMinutes = timeToMinutes(
+      nextParsed.hour,
+      nextParsed.minute,
+      nextParsed.period,
+    )
+
+    let travelMins = 8
+    if (stop.meta && /garden\s*·\s*8\s*min/i.test(stop.meta)) {
+      travelMins = 8
+    } else {
+      const route = getRouteDetail(stop, nextStop, index)
+      const match = route?.detail?.match(/(\d+)\s*min/i)
+      if (match) {
+        travelMins = parseInt(match[1], 10)
+      }
+    }
+
+    // 8 mins travel + 10 mins minimum stop visit buffer = 18 mins
+    // (7:30 pm - 18 mins = 7:12 pm)
+    const maxAllowedMinutes = nextStopMinutes - (travelMins + 10)
+    return selectedMinutes > maxAllowedMinutes
+  }, [nextStop, stop, index, selectedMinutes])
+
+  if (!isOpen) return null
+
+  return (
+    <div
+      className="time-picker-backdrop"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onCancel()
+        }
+      }}
+    >
+      <div className="time-picker-container">
+        {/* Top Card: Picker + Confirm */}
+        <div
+          className={`time-picker-card ${
+            theme === "dark" ? "theme-dark" : ""
+          }`}
+        >
+          {/* Header Row */}
+          <div className="time-picker-header">
+            <span className="time-picker-title">Time</span>
+            <div className="time-picker-badge-pill">{formattedDisplayTime}</div>
+          </div>
+
+          {/* Red Warning Note (if exceeded) */}
+          {isExceeded && (
+            <div className="time-picker-warning-banner">
+              <svg
+                className="warning-icon-svg"
+                viewBox="0 0 24 24"
+                width="15"
+                height="15"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <span>insufficient time to next stop</span>
+            </div>
+          )}
+
+          {/* 3-Column Wheels with Center Selection Bar */}
+          <div className="time-picker-wheels-wrapper">
+            <div className="time-picker-selection-highlight" />
+            <WheelColumn
+              items={HOURS_LIST}
+              value={hour}
+              onChange={setHour}
+              itemHeight={38}
+            />
+            <WheelColumn
+              items={MINUTES_LIST}
+              value={minute}
+              onChange={setMinute}
+              itemHeight={38}
+            />
+            <WheelColumn
+              items={PERIODS_LIST}
+              value={period}
+              onChange={setPeriod}
+              itemHeight={38}
+            />
+          </div>
+
+          {/* Divider */}
+          <div className="time-picker-divider" />
+
+          {/* Confirm Button */}
+          <button
+            type="button"
+            disabled={isExceeded}
+            className={`time-picker-action-btn confirm-btn ${
+              isExceeded ? "disabled" : ""
+            }`}
+            onClick={() => {
+              if (!isExceeded) {
+                const finalPaddedMin =
+                  minute < 10 ? `0${minute}` : `${minute}`
+                const finalTime = `${hour}:${finalPaddedMin} ${period.toLowerCase()}`
+                onConfirm(finalTime)
+              }
+            }}
+          >
+            Confirm
+          </button>
+        </div>
+
+        {/* Bottom Card: Cancel Button */}
+        <div
+          className={`time-picker-cancel-wrapper ${
+            theme === "dark" ? "theme-dark" : ""
+          }`}
+        >
+          <button
+            type="button"
+            className="time-picker-action-btn cancel-btn"
+            onClick={onCancel}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function PlanScreen({
   stops,
   theme,
@@ -4487,6 +4817,7 @@ function PlanScreen({
   onReplaceStop,
   onBounce,
   onSearch,
+  onUpdateTime,
 }: {
   stops: TimelineStop[]
   theme: Theme
@@ -4505,6 +4836,7 @@ function PlanScreen({
   onReplaceStop?: (replaceId: string, customStop?: TimelineStop) => void
   onBounce?: (stop: TimelineStop) => void
   onSearch?: (stop: TimelineStop) => void
+  onUpdateTime?: (stopId: string, newTime: string) => void
 }) {
   const currentRef = useRef<HTMLDivElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -4512,6 +4844,10 @@ function PlanScreen({
   const [expandedAddStopId, setExpandedAddStopId] = useState<string | null>(
     null,
   )
+  const [editingTimeStop, setEditingTimeStop] = useState<{
+    stop: TimelineStop
+    index: number
+  } | null>(null)
   const [mapExpanded, setMapExpanded] = useState(
     new URLSearchParams(window.location.search).get("expanded") === "1",
   )
@@ -4909,12 +5245,18 @@ function PlanScreen({
             <div className="timeline">
               {stops.map((stop, index) => {
                 const isRemovable = true
+                const currentIdx = stops.findIndex((s) => s.current)
+                const isTimeAdjustable = currentIdx !== -1 && index > currentIdx
                 return (
                   <div className="timeline-stop-group" key={stop.id}>
                     <SwipeableTimelineRow
                       stop={stop}
                       currentRef={stop.current ? currentRef : undefined}
                       isRemovable={isRemovable}
+                      isTimeAdjustable={isTimeAdjustable}
+                      onTimeClick={() =>
+                        setEditingTimeStop({ stop, index })
+                      }
                       isOpen={swipedStopId === stop.id}
                       onOpen={() => setSwipedStopId(stop.id)}
                       onClose={() => {
@@ -5062,6 +5404,22 @@ function PlanScreen({
             onReplaceStop?.(replaceId, revisitModalStop)
           }}
           onClose={() => setRevisitModalStop(null)}
+        />
+      )}
+
+      {/* 6. Time Picker Drawer */}
+      {editingTimeStop && (
+        <TimePickerDrawer
+          isOpen={Boolean(editingTimeStop)}
+          stop={editingTimeStop.stop}
+          index={editingTimeStop.index}
+          stops={stops}
+          theme={theme}
+          onConfirm={(newTime) => {
+            onUpdateTime?.(editingTimeStop.stop.id, newTime)
+            setEditingTimeStop(null)
+          }}
+          onCancel={() => setEditingTimeStop(null)}
         />
       )}
     </div>
@@ -6991,6 +7349,12 @@ function App() {
       setSelectedStop(next[targetIndex])
     }
   }
+
+  const handleUpdateStopTime = (stopId: string, newTime: string) => {
+    setPlanStops((prev) =>
+      prev.map((s) => (s.id === stopId ? { ...s, time: newTime } : s)),
+    )
+  }
   const revertSelectedStop = () => {
     if (!selectedStop.originalTitle || !selectedStop.originalMeta) return
     const next = planStops.map((stop) =>
@@ -7301,6 +7665,7 @@ function App() {
                       setRouteSearchTargetStop(stop)
                       setScreen("search-along-route")
                     }}
+                    onUpdateTime={handleUpdateStopTime}
                   />
                 </div>
               )}
@@ -7428,6 +7793,7 @@ function App() {
                       setRouteSearchTargetStop(stop)
                       setScreen("search-along-route")
                     }}
+                    onUpdateTime={handleUpdateStopTime}
                   />
                 </div>
               )}
