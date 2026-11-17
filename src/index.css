@@ -16,6 +16,80 @@
 .light-shell{background:#f2f3f5}
 .dark-shell{background:#0e1216}
 
+/* Figma Make Device Preview Mode (Responsive Full-Bleed for any device preset) */
+html.figma-device-mode,
+body.figma-device-mode {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  background: transparent !important;
+}
+
+.app-shell.figma-device-mode {
+  min-height: 100% !important;
+  height: 100% !important;
+  height: 100dvh !important;
+  width: 100% !important;
+  width: 100vw !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
+}
+
+.app-shell.figma-device-mode .iphone-pro-chassis {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+  flex: 1 1 100% !important;
+  display: flex !important;
+}
+
+.app-shell.figma-device-mode .hardware-btn,
+.app-shell.figma-device-mode .antenna-notch,
+.app-shell.figma-device-mode .dynamic-island-cutout,
+.figma-device-mode .dynamic-island-cutout {
+  display: none !important;
+}
+
+.app-shell.figma-device-mode .iphone-pro-inner-bezel {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  flex: 1 1 100% !important;
+  display: flex !important;
+  overflow: hidden !important;
+}
+
+.app-shell.figma-device-mode .phone {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  flex: 1 1 100% !important;
+}
+
 /* iPhone 18 Pro Black Chassis */
 .iphone-pro-chassis{position:relative;display:flex;align-items:center;justify-content:center;padding:10px;border-radius:56px;background:linear-gradient(135deg,#2c3036 0%,#1d2126 15%,#131518 32%,#25292f 48%,#141619 65%,#1f2328 85%,#2b2f35 100%);box-shadow:0 0 0 1px rgba(255,255,255,0.12),0 0 0 2px rgba(18,20,24,0.85),0 24px 64px rgba(0,0,0,0.45),0 8px 24px rgba(0,0,0,0.25);transform-origin:center center;flex-shrink:0}
 @media (max-height:1060px){.iphone-pro-chassis{transform:scale(min(1,calc((100dvh - 32px)/1060)))}}

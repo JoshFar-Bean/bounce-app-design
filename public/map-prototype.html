@@ -2002,6 +2002,17 @@
         renderItinerary(currentStops);
       }
 
+      if (data.type === 'WINDOW_RESIZE') {
+        if (map && typeof google !== 'undefined' && google.maps) {
+          google.maps.event.trigger(map, 'resize');
+          if (mode === 'itinerary') {
+            fitItineraryCamera(itineraryDrawerDown, currentHighlightedLeg);
+          } else if (mode === 'bounce') {
+            fitBounceCamera(bounceDrawerDown);
+          }
+        }
+      }
+
       if (data.type === 'RECENTER') {
         if (map) {
           if (mode === 'itinerary') {
@@ -2012,6 +2023,18 @@
             map.panTo({ lat: 1.3430, lng: 103.7318 });
             map.setZoom(15.2);
           }
+        }
+      }
+    });
+
+    // Dynamic resize handler for responsive preview (e.g. Figma Make device switching)
+    window.addEventListener('resize', () => {
+      if (map && typeof google !== 'undefined' && google.maps) {
+        google.maps.event.trigger(map, 'resize');
+        if (mode === 'itinerary') {
+          fitItineraryCamera(itineraryDrawerDown, currentHighlightedLeg);
+        } else if (mode === 'bounce') {
+          fitBounceCamera(bounceDrawerDown);
         }
       }
     });

@@ -6448,6 +6448,75 @@ function SearchAlongRouteScreen({
   )
 }
 
+type DeviceMode = "local" | "figma"
+
+const isRunningInIframe = (() => {
+  if (typeof window === "undefined") return false
+  try {
+    return window.self !== window.top
+  } catch {
+    return true
+  }
+})()
+
+function getInitialDeviceMode(): DeviceMode {
+  if (typeof window === "undefined") return "local"
+
+  // 1. Explicit query parameter override
+  const searchParams = new URLSearchParams(window.location.search)
+  if (
+    searchParams.get("mode") === "figma" ||
+    searchParams.get("figma") === "1" ||
+    searchParams.get("figma") === "true" ||
+    searchParams.get("frame") === "0" ||
+    searchParams.get("island") === "0"
+  ) {
+    return "figma"
+  }
+  if (
+    searchParams.get("mode") === "local" ||
+    searchParams.get("local") === "1" ||
+    searchParams.get("local") === "true" ||
+    searchParams.get("frame") === "1" ||
+    searchParams.get("island") === "1"
+  ) {
+    return "local"
+  }
+
+  // 2. User manual toggle stored in sessionStorage
+  try {
+    const saved = window.sessionStorage?.getItem("bounce_device_mode")
+    if (saved === "figma" || saved === "local") {
+      return saved
+    }
+  } catch {
+    // ignore
+  }
+
+  // 3. Figma Make environment detection:
+  // In Figma Make, preview is inside an iframe, or hosted on figma domain, or FIGMA_DEV_SERVER_HOST / FIGMA_PUBLIC_URL is active
+  const inIframe = (() => {
+    try {
+      return window.self !== window.top
+    } catch {
+      return true
+    }
+  })()
+
+  const isFigmaHost =
+    window.location.hostname.includes("figma") ||
+    (typeof document !== "undefined" && document.referrer.includes("figma"))
+
+  const isFigmaBuild =
+    typeof __IS_FIGMA_ENV__ !== "undefined" && Boolean(__IS_FIGMA_ENV__)
+
+  if (inIframe || isFigmaHost || isFigmaBuild) {
+    return "figma"
+  }
+
+  return "local"
+}
+
 function App() {
   const requestedScreen = new URLSearchParams(window.location.search).get(
     "screen",
@@ -6597,6 +6666,42 @@ function App() {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [selectedLegIndex, setSelectedLegIndex] = useState<number | null>(null)
   const [bounceOptionIndex, setBounceOptionIndex] = useState(1)
+  const [deviceMode, setDeviceMode] = useState<DeviceMode>(getInitialDeviceMode)
+
+  useEffect(() => {
+    if (deviceMode === "figma") {
+      document.documentElement.classList.add("figma-device-mode")
+      document.body.classList.add("figma-device-mode")
+    } else {
+      document.documentElement.classList.remove("figma-device-mode")
+      document.body.classList.remove("figma-device-mode")
+    }
+  }, [deviceMode])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (iframeRef.current && iframeRef.current.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(
+          { type: "WINDOW_RESIZE" },
+          "*",
+        )
+      }
+    }, 120)
+    return () => clearTimeout(timer)
+  }, [deviceMode])
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (iframeRef.current && iframeRef.current.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(
+          { type: "WINDOW_RESIZE" },
+          "*",
+        )
+      }
+    }
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [])
 
   const highlightRouteLeg = (index: number) => {
     setSelectedLegIndex(index)
@@ -6968,25 +7073,31 @@ function App() {
     <main
       className={`app-shell ${
         theme === "light" ? "light-shell" : "dark-shell"
-      }`}
+      } ${deviceMode === "figma" ? "figma-device-mode" : ""}`}
     >
-      {/* iPhone 18 Pro Black Chassis */}
+      {/* iPhone 18 Pro Black Chassis (flattened / full-bleed in Figma Make mode) */}
       <div className="iphone-pro-chassis">
-        {/* Hardware buttons on chassis */}
-        <div className="hardware-btn action-btn" title="Action Button" />
-        <div className="hardware-btn vol-up-btn" title="Volume Up" />
-        <div className="hardware-btn vol-down-btn" title="Volume Down" />
-        <div className="hardware-btn power-btn" title="Side Button" />
-        <div className="antenna-notch top-left" />
-        <div className="antenna-notch top-right" />
-        <div className="antenna-notch bot-left" />
-        <div className="antenna-notch bot-right" />
+        {/* Hardware buttons on chassis - hidden in Figma Make mode */}
+        {deviceMode !== "figma" && (
+          <>
+            <div className="hardware-btn action-btn" title="Action Button" />
+            <div className="hardware-btn vol-up-btn" title="Volume Up" />
+            <div className="hardware-btn vol-down-btn" title="Volume Down" />
+            <div className="hardware-btn power-btn" title="Side Button" />
+            <div className="antenna-notch top-left" />
+            <div className="antenna-notch top-right" />
+            <div className="antenna-notch bot-left" />
+            <div className="antenna-notch bot-right" />
+          </>
+        )}
 
         <div className="iphone-pro-inner-bezel">
-          {/* Dynamic Island */}
-          <div className="dynamic-island-cutout">
-            <div className="island-lens-element" />
-          </div>
+          {/* Dynamic Island: shown ONLY in local preview, hidden in Figma Make mode */}
+          {deviceMode !== "figma" && (
+            <div className="dynamic-island-cutout">
+              <div className="island-lens-element" />
+            </div>
+          )}
 
           {/* 1. Phone Container (Wraps the Map to strictly bound it to the iPhone edges) */}
           <div
@@ -7343,6 +7454,71 @@ function App() {
           </div>
         </div>
       </div>
+
+      {/* Localhost Preview Mode Switcher (Allows testing Figma Make Responsive Fit directly on localhost; hidden inside real iframe) */}
+      {!isRunningInIframe && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 14,
+            right: 14,
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            background: "rgba(18, 22, 26, 0.92)",
+            backdropFilter: "blur(14px)",
+            WebkitBackdropFilter: "blur(14px)",
+            border: "1px solid rgba(255, 255, 255, 0.16)",
+            borderRadius: 999,
+            padding: "5px 6px 5px 12px",
+            boxShadow: "0 6px 20px rgba(0, 0, 0, 0.45)",
+            color: "#e8eaed",
+            fontSize: 12,
+            fontFamily: "var(--font)",
+            userSelect: "none",
+          }}
+        >
+          <span style={{ opacity: 0.8, fontWeight: 500, fontSize: 11.5 }}>
+            Preview:
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              const nextMode = deviceMode === "local" ? "figma" : "local"
+              setDeviceMode(nextMode)
+              try {
+                window.sessionStorage?.setItem("bounce_device_mode", nextMode)
+              } catch {}
+            }}
+            style={{
+              background: deviceMode === "figma" ? "#00796b" : "#2b3036",
+              color: "#ffffff",
+              border: "1px solid rgba(255, 255, 255, 0.18)",
+              borderRadius: 999,
+              padding: "4px 10px",
+              fontSize: 11,
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              transition: "all 0.15s ease",
+            }}
+            title="Toggle between Localhost iPhone Chassis + Island and Figma Make Responsive Fit"
+          >
+            {deviceMode === "local" ? (
+              <>
+                <span>📱</span> Local (iPhone + Island)
+              </>
+            ) : (
+              <>
+                <span>📐</span> Figma Make (Device Fit, No Island)
+              </>
+            )}
+          </button>
+        </div>
+      )}
     </main>
   )
 }

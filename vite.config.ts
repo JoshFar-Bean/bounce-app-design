@@ -13,6 +13,11 @@ export default defineConfig(({ mode }) => {
     base: process.env.FIGMA_PUBLIC_URL
       ? `${process.env.FIGMA_PUBLIC_URL}/`
       : "/",
+    define: {
+      __IS_FIGMA_ENV__: JSON.stringify(
+        Boolean(process.env.FIGMA_PUBLIC_URL || process.env.FIGMA_DEV_SERVER_HOST)
+      ),
+    },
     build: {
       sourcemap: emitSourcemaps ? "inline" : false,
       minify: !emitSourcemaps,
