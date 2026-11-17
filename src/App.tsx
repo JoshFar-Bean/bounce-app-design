@@ -1,6 +1,17 @@
 import { useRef, useState, useEffect, type ReactNode } from "react"
 
-type Screen = "map" | "ask" | "history" | "chat" | "saved" | "you" | "plan" | "place" | "bounce" | "updated"
+type Screen =
+  | "map"
+  | "ask"
+  | "history"
+  | "chat"
+  | "saved"
+  | "you"
+  | "plan"
+  | "place"
+  | "bounce"
+  | "updated"
+  | "search-along-route"
 type Theme = "dark" | "light"
 type IconName =
   | "history"
@@ -39,6 +50,14 @@ type IconName =
   | "coffee"
   | "corner-arrow"
   | "pin-filled"
+  | "user-plus"
+  | "grocery"
+  | "restroom"
+  | "hotel"
+  | "home"
+  | "work"
+  | "places"
+  | "info"
 
 const iconPaths: Record<IconName, ReactNode> = {
   history: (
@@ -192,8 +211,23 @@ const iconPaths: Record<IconName, ReactNode> = {
   ),
   directions: (
     <g transform="translate(12,12) rotate(45) translate(-12,-12)">
-      <rect x="3" y="3" width="18" height="18" rx="4" fill="currentColor" stroke="none" />
-      <path d="M8.5 13.5v-2a1.5 1.5 0 0 1 1.5-1.5h4.5m0 0l-2.2-2.2m2.2 2.2l-2.2 2.2" stroke="#5ec3c6" strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <rect
+        x="3"
+        y="3"
+        width="18"
+        height="18"
+        rx="4"
+        fill="currentColor"
+        stroke="none"
+      />
+      <path
+        d="M8.5 13.5v-2a1.5 1.5 0 0 1 1.5-1.5h4.5m0 0l-2.2-2.2m2.2 2.2l-2.2 2.2"
+        stroke="#5ec3c6"
+        strokeWidth="2.2"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </g>
   ),
   restaurants: (
@@ -220,7 +254,69 @@ const iconPaths: Record<IconName, ReactNode> = {
     </>
   ),
   "pin-filled": (
-    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z" fill="currentColor" stroke="none" />
+    <path
+      d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"
+      fill="currentColor"
+      stroke="none"
+    />
+  ),
+  "user-plus": (
+    <>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <line x1="19" y1="8" x2="19" y2="14" />
+      <line x1="22" y1="11" x2="16" y2="11" />
+    </>
+  ),
+  grocery: (
+    <>
+      <circle cx="8" cy="21" r="1" />
+      <circle cx="19" cy="21" r="1" />
+      <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
+    </>
+  ),
+  restroom: (
+    <>
+      <circle cx="9" cy="5" r="2" />
+      <path d="M9 9 7 19h4l-2-10Z" />
+      <circle cx="15" cy="5" r="2" />
+      <path d="M13 19V9h4v10" />
+    </>
+  ),
+  hotel: (
+    <>
+      <path d="M2 4v16" />
+      <path d="M2 8h18a2 2 0 0 1 2 2v10" />
+      <path d="M2 17h20" />
+      <path d="M6 8v9" />
+    </>
+  ),
+  home: (
+    <>
+      <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <polyline points="9 22 9 12 15 12 15 22" />
+    </>
+  ),
+  work: (
+    <>
+      <rect width="20" height="14" x="2" y="7" rx="2" ry="2" />
+      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+    </>
+  ),
+  places: (
+    <>
+      <circle cx="8" cy="12" r="3" />
+      <circle cx="16" cy="12" r="3" />
+      <path d="M8 9a1.5 1.5 0 0 1 1.5 1.5" />
+      <path d="M16 9a1.5 1.5 0 0 1 1.5 1.5" />
+    </>
+  ),
+  info: (
+    <>
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="16" x2="12" y2="12" />
+      <line x1="12" y1="8" x2="12.01" y2="8" />
+    </>
   ),
 }
 
@@ -238,13 +334,20 @@ function Icon({ name, size = 22 }: { name: IconName; size?: number }) {
   )
 }
 
-function AskMark({ size = 26 }: { size?: number }) {
+function AskMark({ size = 26, color }: { size?: number; color?: string }) {
   return (
-    <svg className="ask-mark" viewBox="0 0 28 28" width={size} height={size} style={{ width: size, height: size, flexShrink: 0 }} aria-hidden="true">
-      <path d="M13 2v7M9.5 5.5h7" stroke="#8AB4F8" />
+    <svg
+      className="ask-mark"
+      viewBox="0 0 28 28"
+      width={size}
+      height={size}
+      style={{ width: size, height: size, flexShrink: 0 }}
+      aria-hidden="true"
+    >
+      <path d="M13 2v7M9.5 5.5h7" stroke={color || "#8AB4F8"} />
       <path
         d="M18 8c-6-4-12 0-12 6s6 9 10 6c3-2 2-5-1-6-2-1-4 2-2 4"
-        stroke="#4285F4"
+        stroke={color || "#4285F4"}
       />
       <path d="M17 19c3-1 5-4 5-7" stroke="#34A853" />
       <path d="M22 12c0-2-1-3-3-5" stroke="#F9AB00" />
@@ -253,13 +356,73 @@ function AskMark({ size = 26 }: { size?: number }) {
   )
 }
 
+function AskSparkle({
+  size = 24,
+  color = "#1a73e8",
+}: {
+  size?: number
+  color?: string
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      style={{ flexShrink: 0 }}
+      aria-hidden="true"
+    >
+      <circle
+        cx="9.5"
+        cy="11.5"
+        r="5.5"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M13.5 15.5L18.5 20.5"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M16 3L16.8 5.2L19 6L16.8 6.8L16 9L15.2 6.8L13 6L15.2 5.2L16 3Z"
+        fill={color}
+      />
+      <path
+        d="M7 3L7.4 4.1L8.5 4.5L7.4 4.9L7 6L6.6 4.9L5.5 4.5L6.6 4.1L7 3Z"
+        fill={color}
+      />
+    </svg>
+  )
+}
+
 function GooglePin({ size = 26 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" style={{ flexShrink: 0 }}>
-      <path d="M16 2C10.477 2 6 6.477 6 12c0 7.5 10 18 10 18s10-10.5 10-18c0-5.523-4.477-10-10-10z" fill="#EA4335" />
-      <path d="M16 2c3.5 0 6.5 1.8 8.2 4.6l-4.5 4.5A4.5 4.5 0 0 0 16 9.5V2z" fill="#FBBC04" />
-      <path d="M24.2 6.6C25.3 8.2 26 10 26 12c0 3.2-1.8 7-4.2 10.8l-5.8 7.2V16.5l3.7-3.7a4.5 4.5 0 0 0 .5-6.2z" fill="#34A853" />
-      <path d="M16 30S6 19.5 6 12c0-2 .7-3.8 1.8-5.4l5.9 5.9a4.5 4.5 0 0 0 2.3 4V30z" fill="#4285F4" />
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 32 32"
+      fill="none"
+      style={{ flexShrink: 0 }}
+    >
+      <path
+        d="M16 2C10.477 2 6 6.477 6 12c0 7.5 10 18 10 18s10-10.5 10-18c0-5.523-4.477-10-10-10z"
+        fill="#EA4335"
+      />
+      <path
+        d="M16 2c3.5 0 6.5 1.8 8.2 4.6l-4.5 4.5A4.5 4.5 0 0 0 16 9.5V2z"
+        fill="#FBBC04"
+      />
+      <path
+        d="M24.2 6.6C25.3 8.2 26 10 26 12c0 3.2-1.8 7-4.2 10.8l-5.8 7.2V16.5l3.7-3.7a4.5 4.5 0 0 0 .5-6.2z"
+        fill="#34A853"
+      />
+      <path
+        d="M16 30S6 19.5 6 12c0-2 .7-3.8 1.8-5.4l5.9 5.9a4.5 4.5 0 0 0 2.3 4V30z"
+        fill="#4285F4"
+      />
       <circle cx="16" cy="12" r="3.6" fill="#1e2124" />
     </svg>
   )
@@ -267,7 +430,13 @@ function GooglePin({ size = 26 }: { size?: number }) {
 
 function WeatherIcon({ size = 18 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      style={{ flexShrink: 0 }}
+    >
       <circle cx="8" cy="8" r="4.2" fill="#F9AB00" />
       <path
         d="M9 19h10a4 4 0 0 0 0-8 5.5 5.5 0 0 0-5.3-3.9 5.5 5.5 0 0 0-5.2 3.9A4 4 0 0 0 9 19z"
@@ -280,7 +449,13 @@ function WeatherIcon({ size = 18 }: { size?: number }) {
 
 function MakePlansIllustration() {
   return (
-    <svg width="68" height="54" viewBox="0 0 68 54" fill="none" style={{ flexShrink: 0 }}>
+    <svg
+      width="68"
+      height="54"
+      viewBox="0 0 68 54"
+      fill="none"
+      style={{ flexShrink: 0 }}
+    >
       <circle cx="50" cy="18" r="14" fill="#8B5CF6" fillOpacity="0.2" />
       <circle cx="24" cy="34" r="14" fill="#10B981" fillOpacity="0.15" />
       <circle cx="48" cy="40" r="14" fill="#3B82F6" fillOpacity="0.2" />
@@ -296,14 +471,24 @@ function MakePlansIllustration() {
 
       {/* Left Figure: Green scarf */}
       <g transform="translate(6, 18)">
-        <path d="M10 2c-5 0-9 4-9 9 0 4 2.5 7.5 6 8.5v3.5h7v-3.5c3.5-1 6-4.5 6-8.5 0-5-4-9-10-9z" fill="#059669" />
+        <path
+          d="M10 2c-5 0-9 4-9 9 0 4 2.5 7.5 6 8.5v3.5h7v-3.5c3.5-1 6-4.5 6-8.5 0-5-4-9-10-9z"
+          fill="#059669"
+        />
         <circle cx="10" cy="11" r="5" fill="#D97706" />
-        <path d="M2 32c0-5 3.5-8 8.5-8s8.5 3 8.5 8H2z" fill="#F59E0B" fillOpacity="0.8" />
+        <path
+          d="M2 32c0-5 3.5-8 8.5-8s8.5 3 8.5 8H2z"
+          fill="#F59E0B"
+          fillOpacity="0.8"
+        />
       </g>
 
       {/* Bottom Figure: Blue cap, camera */}
       <g transform="translate(32, 24)">
-        <path d="M12 6c0-3.5 3-6 7-6 3.5 0 6 2 7 4.5l6 1.5H19c-3 0-5 1-7 0z" fill="#2563EB" />
+        <path
+          d="M12 6c0-3.5 3-6 7-6 3.5 0 6 2 7 4.5l6 1.5H19c-3 0-5 1-7 0z"
+          fill="#2563EB"
+        />
         <circle cx="18" cy="11" r="5" fill="#FBBF24" />
         <path d="M9 30c0-6 4-10 10-10h2c6 0 10 4 10 10H9z" fill="#1D4ED8" />
         <rect x="3" y="16" width="9" height="6" rx="1.5" fill="#06B6D4" />
@@ -311,8 +496,14 @@ function MakePlansIllustration() {
 
       {/* Sparkles */}
       <path d="M24 10l1 2 2 1-2 1-1 2-1-2-2-1 2-1 1-2z" fill="#67E8F9" />
-      <path d="M60 30l.8 1.6 1.6.8-1.6.8-.8 1.6-.8-1.6-1.6-.8 1.6-.8.8-1.6z" fill="#F472B6" />
-      <path d="M14 44l.6 1.2 1.2.6-1.2.6-.6 1.2-.6-1.2-1.2-.6 1.2-.6.6-1.2z" fill="#FDE047" />
+      <path
+        d="M60 30l.8 1.6 1.6.8-1.6.8-.8 1.6-.8-1.6-1.6-.8 1.6-.8.8-1.6z"
+        fill="#F472B6"
+      />
+      <path
+        d="M14 44l.6 1.2 1.2.6-1.2.6-.6 1.2-.6-1.2-1.2-.6 1.2-.6.6-1.2z"
+        fill="#FDE047"
+      />
     </svg>
   )
 }
@@ -351,18 +542,20 @@ function Tap({
   label,
   className = "",
   onPress,
-  style, // 1. ADD THIS LINE
+  style, // 1. ADD THIS LINE // 2. ADD THIS LINE
 }: {
   children?: ReactNode
   label: string
   className?: string
   onPress?: () => void
-  style?: React.CSSProperties // 2. ADD THIS LINE
+  style?: React.CSSProperties
 }) {
   return (
     <div
       className={`tap ${className}`}
-      style={style} // 3. ADD THIS LINE
+      style={
+        style // 3. ADD THIS LINE
+      }
       role="button"
       tabIndex={0}
       aria-label={label}
@@ -421,13 +614,13 @@ function BackButton({
               boxShadow: "0 3px 12px rgba(0,0,0,0.15)",
             }
           : theme === "dark"
-          ? {
-              background: "#252628e8",
-              color: "#ffffff",
-              border: "1px solid rgba(255,255,255,0.08)",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
-            }
-          : {}),
+            ? {
+                background: "#252628e8",
+                color: "#ffffff",
+                border: "1px solid rgba(255,255,255,0.08)",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+              }
+            : {}),
         pointerEvents: "auto",
         ...style,
       }}
@@ -461,26 +654,37 @@ function MapControls({
 }
 
 function AskHeader({
+  theme = "dark",
   onHistory,
   onBack,
   onClose,
 }: {
+  theme?: Theme
   onHistory?: () => void
   onBack?: () => void
   onClose?: () => void
 }) {
+  const isLight = theme === "light"
   return (
     <div className="ask-header">
       <div className="drag" />
-      {(onBack || onClose) && <BackButton onPress={onBack ?? onClose!} />}
+      {onBack && <BackButton onPress={onBack} theme={theme} />}
       <div className="ask-lockup">
-        <AskMark />
+        <AskSparkle size={24} color={isLight ? "#1a73e8" : "#8ab4f8"} />
         <span>Ask Maps</span>
       </div>
       <div className="header-actions">
-        <RoundAction icon="history" label="Chat history" onPress={onHistory} />
+        {onHistory && (
+          <RoundAction
+            icon="history"
+            label="Chat history"
+            onPress={onHistory}
+          />
+        )}
         <RoundAction icon="edit" label="New chat" />
-        <RoundAction icon="close" label="Close" onPress={onClose} />
+        {onClose && (
+          <RoundAction icon="close" label="Close" onPress={onClose} />
+        )}
       </div>
     </div>
   )
@@ -561,27 +765,42 @@ function MapScreen({
   onRecenter?: () => void
 }) {
   return (
-    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-      
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        overflow: "hidden",
+        pointerEvents: "none",
+      }}
+    >
       {/* 1. Top Search Bar Area & Category Chips Row (Directly matches Google Maps reference) */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 30, padding: '44px 14px 0', pointerEvents: 'none' }}>
-        
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 30,
+          padding: "44px 14px 0",
+          pointerEvents: "none",
+        }}
+      >
         {/* Floating Rounded Search Bar */}
-        <div 
+        <div
           onClick={onAsk}
           className="tap"
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            background: 'var(--control)',
-            borderRadius: '9999px',
-            padding: '0 8px 0 16px',
-            height: '52px',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            pointerEvents: 'auto',
-            cursor: 'pointer'
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            background: "var(--control)",
+            borderRadius: "9999px",
+            padding: "0 8px 0 16px",
+            height: "52px",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.35)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            pointerEvents: "auto",
+            cursor: "pointer",
           }}
           role="button"
           tabIndex={0}
@@ -591,35 +810,61 @@ function MapScreen({
           <GooglePin size={24} />
 
           {/* Search Placeholder */}
-          <span style={{ flex: 1, fontSize: '16px', color: 'var(--text-low)', fontWeight: 400 }}>
+          <span
+            style={{
+              flex: 1,
+              fontSize: "16px",
+              color: "var(--text-low)",
+              fontWeight: 400,
+            }}
+          >
             Search here
           </span>
 
           {/* Right Action Icons: Mic, Lens, Avatar */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginRight: '4px' }}>
-            <div style={{ color: 'var(--text-high)', display: 'grid', placeItems: 'center' }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "14px",
+              marginRight: "4px",
+            }}
+          >
+            <div
+              style={{
+                color: "var(--text-high)",
+                display: "grid",
+                placeItems: "center",
+              }}
+            >
               <Icon name="mic" size={21} />
             </div>
-            <div style={{ color: 'var(--text-high)', display: 'grid', placeItems: 'center' }}>
+            <div
+              style={{
+                color: "var(--text-high)",
+                display: "grid",
+                placeItems: "center",
+              }}
+            >
               <Icon name="lens" size={20} />
             </div>
-            
+
             {/* User Profile Avatar with Blue Ring */}
-            <div 
+            <div
               style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                background: '#8bc34a',
-                color: '#ffffff',
-                display: 'grid',
-                placeItems: 'center',
-                fontSize: '17px',
+                width: "32px",
+                height: "32px",
+                borderRadius: "50%",
+                background: "#8bc34a",
+                color: "#ffffff",
+                display: "grid",
+                placeItems: "center",
+                fontSize: "17px",
                 fontWeight: 600,
-                fontFamily: 'system-ui, -apple-system, sans-serif',
-                boxShadow: '0 0 0 2px var(--control), 0 0 0 4px #4285f4',
+                fontFamily: "system-ui, -apple-system, sans-serif",
+                boxShadow: "0 0 0 2px var(--control), 0 0 0 4px #4285f4",
                 flexShrink: 0,
-                lineHeight: 1
+                lineHeight: 1,
               }}
             >
               j
@@ -628,18 +873,18 @@ function MapScreen({
         </div>
 
         {/* Quick Filter Chips Row (Horizontally Scrollable) */}
-        <div 
+        <div
           className="chips-row"
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            marginTop: '10px',
-            overflowX: 'auto',
-            paddingBottom: '4px',
-            pointerEvents: 'auto',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none'
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            marginTop: "10px",
+            overflowX: "auto",
+            paddingBottom: "4px",
+            pointerEvents: "auto",
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
           }}
         >
           {/* Ask Maps Chip (Active with Blue Accent Outline) */}
@@ -647,43 +892,51 @@ function MapScreen({
             onClick={onAsk}
             className="tap"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '0 14px',
-              height: '36px',
-              borderRadius: '9999px',
-              background: '#182536',
-              border: '1.5px solid #4285f4',
-              color: '#8ab4f8',
-              fontSize: '13px',
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "0 14px",
+              height: "36px",
+              borderRadius: "9999px",
+              background: theme === "light" ? "#e8f0fe" : "#182536",
+              border:
+                theme === "light"
+                  ? "1.5px solid #1a73e8"
+                  : "1.5px solid #4285f4",
+              color: theme === "light" ? "#1a73e8" : "#8ab4f8",
+              fontSize: "13px",
               fontWeight: 600,
-              whiteSpace: 'nowrap',
+              whiteSpace: "nowrap",
               flexShrink: 0,
-              cursor: 'pointer'
+              cursor: "pointer",
             }}
           >
-            <AskMark size={18} />
-            <span style={{ color: '#ffffff' }}>Ask Maps</span>
+            <AskSparkle
+              size={18}
+              color={theme === "light" ? "#1a73e8" : "#8ab4f8"}
+            />
+            <span style={{ color: theme === "light" ? "#1a73e8" : "#ffffff" }}>
+              Ask Maps
+            </span>
           </div>
 
           {/* Restaurants Chip */}
           <div
             className="tap"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '0 14px',
-              height: '36px',
-              borderRadius: '9999px',
-              background: 'var(--control)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              color: 'var(--text-high)',
-              fontSize: '13px',
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "0 14px",
+              height: "36px",
+              borderRadius: "9999px",
+              background: "var(--control)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              color: "var(--text-high)",
+              fontSize: "13px",
               fontWeight: 500,
-              whiteSpace: 'nowrap',
-              flexShrink: 0
+              whiteSpace: "nowrap",
+              flexShrink: 0,
             }}
           >
             <Icon name="restaurants" size={17} />
@@ -694,19 +947,19 @@ function MapScreen({
           <div
             className="tap"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '0 14px',
-              height: '36px',
-              borderRadius: '9999px',
-              background: 'var(--control)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              color: 'var(--text-high)',
-              fontSize: '13px',
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "0 14px",
+              height: "36px",
+              borderRadius: "9999px",
+              background: "var(--control)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              color: "var(--text-high)",
+              fontSize: "13px",
               fontWeight: 500,
-              whiteSpace: 'nowrap',
-              flexShrink: 0
+              whiteSpace: "nowrap",
+              flexShrink: 0,
             }}
           >
             <Icon name="petrol" size={17} />
@@ -717,19 +970,19 @@ function MapScreen({
           <div
             className="tap"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '0 14px',
-              height: '36px',
-              borderRadius: '9999px',
-              background: 'var(--control)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              color: 'var(--text-high)',
-              fontSize: '13px',
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "0 14px",
+              height: "36px",
+              borderRadius: "9999px",
+              background: "var(--control)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              color: "var(--text-high)",
+              fontSize: "13px",
               fontWeight: 500,
-              whiteSpace: 'nowrap',
-              flexShrink: 0
+              whiteSpace: "nowrap",
+              flexShrink: 0,
             }}
           >
             <Icon name="coffee" size={17} />
@@ -742,21 +995,21 @@ function MapScreen({
       <div
         className="tap"
         style={{
-          position: 'absolute',
-          top: '154px',
-          right: '14px',
-          width: '42px',
-          height: '42px',
-          borderRadius: '50%',
-          background: 'var(--control)',
-          color: 'var(--text-high)',
-          display: 'grid',
-          placeItems: 'center',
-          boxShadow: '0 3px 12px rgba(0,0,0,0.3)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          pointerEvents: 'auto',
+          position: "absolute",
+          top: "154px",
+          right: "14px",
+          width: "42px",
+          height: "42px",
+          borderRadius: "50%",
+          background: "var(--control)",
+          color: "var(--text-high)",
+          display: "grid",
+          placeItems: "center",
+          boxShadow: "0 3px 12px rgba(0,0,0,0.3)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          pointerEvents: "auto",
           zIndex: 15,
-          cursor: 'pointer'
+          cursor: "pointer",
         }}
         title="Map Layers"
       >
@@ -766,29 +1019,29 @@ function MapScreen({
       {/* 3. Lower Floating Action Button Cluster (Compass, Theme Toggle, Directions) */}
       <div
         style={{
-          position: 'absolute',
-          bottom: '312px',
-          right: '14px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '10px',
-          pointerEvents: 'auto',
-          zIndex: 26
+          position: "absolute",
+          bottom: "312px",
+          right: "14px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "10px",
+          pointerEvents: "auto",
+          zIndex: 26,
         }}
       >
         {/* Vertical Pill containing Compass + White Sun Theme Toggle */}
         <div
           style={{
-            background: 'var(--control)',
-            borderRadius: '24px',
-            padding: '3px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '4px',
-            boxShadow: '0 4px 14px rgba(0,0,0,0.35)',
-            border: '1px solid rgba(255,255,255,0.08)'
+            background: "var(--control)",
+            borderRadius: "24px",
+            padding: "3px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "4px",
+            boxShadow: "0 4px 14px rgba(0,0,0,0.35)",
+            border: "1px solid rgba(255,255,255,0.08)",
           }}
         >
           {/* Compass / Recenter Button */}
@@ -796,12 +1049,12 @@ function MapScreen({
             onClick={onRecenter}
             className="tap"
             style={{
-              width: '40px',
-              height: '38px',
-              display: 'grid',
-              placeItems: 'center',
-              color: 'var(--text-high)',
-              cursor: 'pointer'
+              width: "40px",
+              height: "38px",
+              display: "grid",
+              placeItems: "center",
+              color: "var(--text-high)",
+              cursor: "pointer",
             }}
             title="Recenter Map"
           >
@@ -813,19 +1066,19 @@ function MapScreen({
             onClick={onToggleTheme}
             className="tap"
             style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              background: theme === 'dark' ? '#ffffff' : '#202124',
-              color: theme === 'dark' ? '#202124' : '#ffffff',
-              display: 'grid',
-              placeItems: 'center',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
-              cursor: 'pointer'
+              width: "40px",
+              height: "40px",
+              borderRadius: "50%",
+              background: theme === "dark" ? "#ffffff" : "#202124",
+              color: theme === "dark" ? "#202124" : "#ffffff",
+              display: "grid",
+              placeItems: "center",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
+              cursor: "pointer",
             }}
-            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
           >
-            <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={20} />
+            <Icon name={theme === "dark" ? "sun" : "moon"} size={20} />
           </div>
         </div>
 
@@ -834,15 +1087,15 @@ function MapScreen({
           onClick={onDirections}
           className="tap"
           style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '16px',
-            background: '#5ec3c6',
-            color: '#08262a',
-            display: 'grid',
-            placeItems: 'center',
-            boxShadow: '0 4px 14px rgba(0,0,0,0.35)',
-            cursor: 'pointer'
+            width: "48px",
+            height: "48px",
+            borderRadius: "16px",
+            background: "#5ec3c6",
+            color: "#08262a",
+            display: "grid",
+            placeItems: "center",
+            boxShadow: "0 4px 14px rgba(0,0,0,0.35)",
+            cursor: "pointer",
           }}
           title="Directions"
         >
@@ -854,64 +1107,94 @@ function MapScreen({
       <div
         className="bottom-sheet"
         style={{
-          position: 'absolute',
+          position: "absolute",
           bottom: 0,
           left: 0,
           right: 0,
-          background: 'var(--canvas)',
-          borderTopLeftRadius: '24px',
-          borderTopRightRadius: '24px',
-          boxShadow: '0 -6px 24px rgba(0,0,0,0.5)',
+          background: "var(--canvas)",
+          borderTopLeftRadius: "24px",
+          borderTopRightRadius: "24px",
+          boxShadow: "0 -6px 24px rgba(0,0,0,0.5)",
           zIndex: 25,
-          pointerEvents: 'auto',
-          display: 'flex',
-          flexDirection: 'column'
+          pointerEvents: "auto",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         {/* Grab Handle */}
         <div
           style={{
-            width: '36px',
-            height: '4px',
-            borderRadius: '999px',
-            background: '#5f6368',
-            margin: '10px auto 12px auto'
+            width: "36px",
+            height: "4px",
+            borderRadius: "999px",
+            background: "#5f6368",
+            margin: "10px auto 12px auto",
           }}
         />
 
         {/* Header Row: "Be in the know" + Weather Badge */}
         <div
           style={{
-            padding: '0 16px 12px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
+            padding: "0 16px 12px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
           }}
         >
-          <span style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+          <span
+            style={{
+              fontSize: "20px",
+              fontWeight: 600,
+              color: "var(--text)",
+              letterSpacing: "-0.02em",
+            }}
+          >
             Be in the know
           </span>
 
           {/* Weather Pill (32° • 62 PSI) */}
           <div
             style={{
-              background: 'var(--raised)',
-              borderRadius: '12px',
-              padding: '4px 10px',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'flex-start',
-              gap: '2px',
-              border: '1px solid rgba(255,255,255,0.06)'
+              background: "var(--raised)",
+              borderRadius: "12px",
+              padding: "4px 10px",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+              gap: "2px",
+              border: "1px solid rgba(255,255,255,0.06)",
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
               <WeatherIcon size={16} />
-              <span style={{ color: 'var(--text)', fontSize: '13px', fontWeight: 600 }}>32°</span>
+              <span
+                style={{
+                  color: "var(--text)",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                }}
+              >
+                32°
+              </span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#4285f4' }} />
-              <span style={{ color: 'var(--text-low)', fontSize: '10px', fontWeight: 500 }}>62 PSI</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+              <span
+                style={{
+                  width: "6px",
+                  height: "6px",
+                  borderRadius: "50%",
+                  background: "#4285f4",
+                }}
+              />
+              <span
+                style={{
+                  color: "var(--text-low)",
+                  fontSize: "10px",
+                  fontWeight: 500,
+                }}
+              >
+                62 PSI
+              </span>
             </div>
           </div>
         </div>
@@ -921,43 +1204,75 @@ function MapScreen({
           onClick={onAsk}
           className="tap"
           style={{
-            margin: '0 14px 12px',
-            background: 'var(--raised)',
-            borderRadius: '20px',
-            padding: '14px 16px 12px',
-            position: 'relative',
-            overflow: 'hidden',
-            border: '1px solid rgba(255,255,255,0.06)',
-            cursor: 'pointer'
+            margin: "0 14px 12px",
+            background: "var(--raised)",
+            borderRadius: "20px",
+            padding: "14px 16px 12px",
+            position: "relative",
+            overflow: "hidden",
+            border: "1px solid rgba(255,255,255,0.06)",
+            cursor: "pointer",
           }}
         >
           {/* Card Title */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-            <span style={{ color: 'var(--text)', fontSize: '15px', fontWeight: 600 }}>Make plans with</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <AskMark size={18} />
-              <span style={{ color: 'var(--text)', fontSize: '15px', fontWeight: 600 }}>Ask Maps</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+            <span
+              style={{
+                color: "var(--text)",
+                fontSize: "15px",
+                fontWeight: 600,
+              }}
+            >
+              Make plans with
+            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+              <AskSparkle
+                size={18}
+                color={theme === "light" ? "#1a73e8" : "#8ab4f8"}
+              />
+              <span
+                style={{
+                  color: theme === "light" ? "#1a73e8" : "#8ab4f8",
+                  fontSize: "15px",
+                  fontWeight: 600,
+                }}
+              >
+                Ask Maps
+              </span>
             </div>
           </div>
 
           {/* Interactive Search Chip & Characters Illustration */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '10px' }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginTop: "10px",
+            }}
+          >
             <div
               style={{
-                background: 'var(--input)',
-                borderRadius: '999px',
-                padding: '8px 14px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                color: 'var(--text-high)',
-                fontSize: '13px',
+                background: "var(--input)",
+                borderRadius: "999px",
+                padding: "8px 14px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                color: "var(--text-high)",
+                fontSize: "13px",
                 fontWeight: 500,
-                maxWidth: '70%'
+                maxWidth: "70%",
               }}
             >
               <Icon name="corner-arrow" size={15} />
-              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <span
+                style={{
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
                 Things to do this weekend?
               </span>
             </div>
@@ -970,38 +1285,47 @@ function MapScreen({
         {/* 5. Bottom Navigation Bar */}
         <div
           style={{
-            height: '62px',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            background: 'var(--canvas)',
-            borderTop: '1px solid rgba(255,255,255,0.06)'
+            height: "62px",
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            background: "var(--canvas)",
+            borderTop:
+              theme === "light"
+                ? "1px solid #e0e4e6"
+                : "1px solid rgba(255,255,255,0.06)",
           }}
         >
-          {/* Explore Tab (Active with Teal Pill) */}
+          {/* Explore Tab (Active with Teal Pill in Dark Mode, Soft Blue Pill in Light Mode) */}
           <div
             className="tap"
             style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '3px'
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "3px",
             }}
           >
             <div
               style={{
-                width: '58px',
-                height: '30px',
-                borderRadius: '999px',
-                background: '#004f54',
-                color: '#55d0d4',
-                display: 'grid',
-                placeItems: 'center'
+                width: "58px",
+                height: "30px",
+                borderRadius: "999px",
+                background: theme === "light" ? "#c2e7ff" : "#004f54",
+                color: theme === "light" ? "#001d35" : "#55d0d4",
+                display: "grid",
+                placeItems: "center",
               }}
             >
               <Icon name="pin-filled" size={18} />
             </div>
-            <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text)' }}>
+            <span
+              style={{
+                fontSize: "11px",
+                fontWeight: theme === "light" ? 700 : 600,
+                color: theme === "light" ? "#001d35" : "var(--text)",
+              }}
+            >
               Explore
             </span>
           </div>
@@ -1011,38 +1335,44 @@ function MapScreen({
             onClick={onYou}
             className="tap"
             style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '3px',
-              cursor: 'pointer'
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "3px",
+              cursor: "pointer",
             }}
           >
             <div
               style={{
-                width: '58px',
-                height: '30px',
-                display: 'grid',
-                placeItems: 'center',
-                color: 'var(--text-low)',
-                position: 'relative'
+                width: "58px",
+                height: "30px",
+                display: "grid",
+                placeItems: "center",
+                color: theme === "light" ? "#444746" : "var(--text-low)",
+                position: "relative",
               }}
             >
               <Icon name="bookmark" size={20} />
               <span
                 style={{
-                  position: 'absolute',
-                  top: '4px',
-                  right: '18px',
-                  width: '6px',
-                  height: '6px',
-                  borderRadius: '50%',
-                  background: '#f28b82'
+                  position: "absolute",
+                  top: "4px",
+                  right: "18px",
+                  width: "6px",
+                  height: "6px",
+                  borderRadius: "50%",
+                  background: theme === "light" ? "#d93025" : "#f28b82",
                 }}
               />
             </div>
-            <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--text-low)' }}>
+            <span
+              style={{
+                fontSize: "11px",
+                fontWeight: 500,
+                color: theme === "light" ? "#444746" : "var(--text-low)",
+              }}
+            >
               You
             </span>
           </div>
@@ -1051,25 +1381,31 @@ function MapScreen({
           <div
             className="tap"
             style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '3px'
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "3px",
             }}
           >
             <div
               style={{
-                width: '58px',
-                height: '30px',
-                display: 'grid',
-                placeItems: 'center',
-                color: 'var(--text-low)'
+                width: "58px",
+                height: "30px",
+                display: "grid",
+                placeItems: "center",
+                color: theme === "light" ? "#444746" : "var(--text-low)",
               }}
             >
               <Icon name="plus" size={20} />
             </div>
-            <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--text-low)' }}>
+            <span
+              style={{
+                fontSize: "11px",
+                fontWeight: 500,
+                color: theme === "light" ? "#444746" : "var(--text-low)",
+              }}
+            >
               Contribute
             </span>
           </div>
@@ -1078,21 +1414,21 @@ function MapScreen({
         {/* iPhone Bottom Home Indicator */}
         <div
           style={{
-            height: '16px',
-            background: 'var(--canvas)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'flex-start',
-            paddingTop: '2px'
+            height: "16px",
+            background: "var(--canvas)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "flex-start",
+            paddingTop: "2px",
           }}
         >
           <div
             style={{
-              width: '134px',
-              height: '4.5px',
-              borderRadius: '999px',
-              background: '#ffffff',
-              opacity: 0.8
+              width: "134px",
+              height: "4.5px",
+              borderRadius: "999px",
+              background: "#ffffff",
+              opacity: 0.8,
             }}
           />
         </div>
@@ -1100,7 +1436,7 @@ function MapScreen({
 
       {/* 6. Save Confirmation Toast */}
       {saved && (
-        <div className="toast" style={{ zIndex: 35, pointerEvents: 'none' }}>
+        <div className="toast" style={{ zIndex: 35, pointerEvents: "none" }}>
           <span className="toast-icon">
             <Icon name="check" size={18} />
           </span>
@@ -1113,79 +1449,919 @@ function MapScreen({
     </div>
   )
 }
+function IOSKeyboard({
+  theme = "dark",
+  onSend,
+  onKey,
+  onBackspace,
+}: {
+  theme?: Theme
+  onSend: () => void
+  onKey?: (char: string) => void
+  onBackspace?: () => void
+}) {
+  const isLight = theme === "light"
+  const kbBg = isLight ? "#d1d5db" : "#1c1d1f"
+  const keyBg = isLight ? "#ffffff" : "#38393c"
+  const keyText = isLight ? "#000000" : "#ffffff"
+  const specKeyBg = isLight ? "#b2b8c2" : "#2a2b2e"
+  const keyShadow = isLight
+    ? "0 1px 0 rgba(0,0,0,0.3)"
+    : "0 1px 0 rgba(0,0,0,0.5)"
+
+  const row1 = ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"]
+  const row2 = ["A", "S", "D", "F", "G", "H", "J", "K", "L"]
+  const row3 = ["Z", "X", "C", "V", "B", "N", "M"]
+
+  return (
+    <div
+      style={{
+        background: kbBg,
+        padding: "6px 4px 10px",
+        userSelect: "none",
+        borderTop: isLight ? "1px solid #c4c7c5" : "1px solid #2a2b2e",
+      }}
+    >
+      {/* Predictive text suggestions */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-around",
+          alignItems: "center",
+          height: 32,
+          marginBottom: 4,
+          fontSize: 14,
+          color: isLight ? "#3c4043" : "#d1d5db",
+          fontWeight: 400,
+        }}
+      >
+        <span style={{ flex: 1, textAlign: "center" }}>I</span>
+        <div
+          style={{
+            width: 1,
+            height: 16,
+            background: isLight ? "#bdc1c6" : "#444746",
+          }}
+        />
+        <span style={{ flex: 1, textAlign: "center", fontWeight: 500 }}>
+          The
+        </span>
+        <div
+          style={{
+            width: 1,
+            height: 16,
+            background: isLight ? "#bdc1c6" : "#444746",
+          }}
+        />
+        <span style={{ flex: 1, textAlign: "center" }}>I’m</span>
+      </div>
+
+      {/* Row 1 */}
+      <div
+        style={{
+          display: "flex",
+          gap: 5,
+          justifyContent: "center",
+          marginBottom: 7,
+        }}
+      >
+        {row1.map((char) => (
+          <button
+            key={char}
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onKey?.(char.toLowerCase())}
+            style={{
+              flex: 1,
+              height: 42,
+              borderRadius: 6,
+              background: keyBg,
+              color: keyText,
+              border: "none",
+              fontSize: 18,
+              fontWeight: 400,
+              boxShadow: keyShadow,
+              display: "grid",
+              placeItems: "center",
+              cursor: "pointer",
+            }}
+          >
+            {char}
+          </button>
+        ))}
+      </div>
+
+      {/* Row 2 */}
+      <div
+        style={{
+          display: "flex",
+          gap: 5,
+          justifyContent: "center",
+          padding: "0 14px",
+          marginBottom: 7,
+        }}
+      >
+        {row2.map((char) => (
+          <button
+            key={char}
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onKey?.(char.toLowerCase())}
+            style={{
+              flex: 1,
+              height: 42,
+              borderRadius: 6,
+              background: keyBg,
+              color: keyText,
+              border: "none",
+              fontSize: 18,
+              fontWeight: 400,
+              boxShadow: keyShadow,
+              display: "grid",
+              placeItems: "center",
+              cursor: "pointer",
+            }}
+          >
+            {char}
+          </button>
+        ))}
+      </div>
+
+      {/* Row 3 */}
+      <div
+        style={{
+          display: "flex",
+          gap: 5,
+          justifyContent: "center",
+          marginBottom: 7,
+        }}
+      >
+        {/* Shift */}
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: 6,
+            background: specKeyBg,
+            color: keyText,
+            border: "none",
+            display: "grid",
+            placeItems: "center",
+            boxShadow: keyShadow,
+            cursor: "pointer",
+          }}
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+          >
+            <path d="M12 4L4 14h5v6h6v-6h5L12 4z" />
+          </svg>
+        </button>
+
+        {row3.map((char) => (
+          <button
+            key={char}
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onKey?.(char.toLowerCase())}
+            style={{
+              flex: 1,
+              height: 42,
+              borderRadius: 6,
+              background: keyBg,
+              color: keyText,
+              border: "none",
+              fontSize: 18,
+              fontWeight: 400,
+              boxShadow: keyShadow,
+              display: "grid",
+              placeItems: "center",
+              cursor: "pointer",
+            }}
+          >
+            {char}
+          </button>
+        ))}
+
+        {/* Backspace */}
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => onBackspace?.()}
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: 6,
+            background: specKeyBg,
+            color: keyText,
+            border: "none",
+            display: "grid",
+            placeItems: "center",
+            boxShadow: keyShadow,
+            cursor: "pointer",
+          }}
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" />
+            <line x1="18" y1="9" x2="12" y2="15" />
+            <line x1="12" y1="9" x2="18" y2="15" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Row 4 */}
+      <div
+        style={{
+          display: "flex",
+          gap: 5,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        {/* 123 */}
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          style={{
+            width: 38,
+            height: 42,
+            borderRadius: 6,
+            background: specKeyBg,
+            color: keyText,
+            border: "none",
+            fontSize: 15,
+            fontWeight: 500,
+            boxShadow: keyShadow,
+            cursor: "pointer",
+          }}
+        >
+          123
+        </button>
+
+        {/* Emoji */}
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          style={{
+            width: 38,
+            height: 42,
+            borderRadius: 6,
+            background: specKeyBg,
+            color: keyText,
+            border: "none",
+            fontSize: 18,
+            display: "grid",
+            placeItems: "center",
+            boxShadow: keyShadow,
+            cursor: "pointer",
+          }}
+        >
+          😊
+        </button>
+
+        {/* Space bar */}
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => onKey?.(" ")}
+          style={{
+            flex: 1,
+            height: 42,
+            borderRadius: 6,
+            background: keyBg,
+            color: isLight ? "#9aa0a6" : "#70757a",
+            border: "none",
+            fontSize: 13,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            paddingRight: 10,
+            boxShadow: keyShadow,
+            cursor: "pointer",
+          }}
+        >
+          EN
+        </button>
+
+        {/* Blue Send Button */}
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={onSend}
+          aria-label="Send prompt"
+          style={{
+            width: 66,
+            height: 42,
+            borderRadius: 6,
+            background: "#007aff",
+            color: "#ffffff",
+            border: "none",
+            display: "grid",
+            placeItems: "center",
+            boxShadow: "0 1px 2px rgba(0,122,255,0.4)",
+            cursor: "pointer",
+          }}
+        >
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#ffffff"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <line x1="12" y1="19" x2="12" y2="5" />
+            <polyline points="5 12 12 5 19 12" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Bottom utility row (globe & mic) */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          padding: "8px 18px 0",
+        }}
+      >
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={isLight ? "#3c4043" : "#9aa0a6"}
+          strokeWidth="1.8"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <line x1="2" y1="12" x2="22" y2="12" />
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+        </svg>
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={isLight ? "#3c4043" : "#9aa0a6"}
+          strokeWidth="1.8"
+        >
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3Z" />
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" />
+        </svg>
+      </div>
+    </div>
+  )
+}
+
 function AskStart({
+  theme = "dark",
   onHistory,
   onSend,
   onClose,
 }: {
+  theme?: Theme
   onHistory: () => void
   onSend: () => void
   onClose: () => void
 }) {
   const [prompt, setPrompt] = useState("")
+  const inputRef = useRef<HTMLInputElement>(null)
+  const isLight = theme === "light"
+  const mapImg = isLight
+    ? "/assets/prototype/screen-4.jpg"
+    : "/assets/explore-home-map.jpg"
+  const sheetBg = isLight ? "#ffffff" : "#1b1f23"
+  const textColor = isLight ? "#1f1f1f" : "#e8eaed"
+  const subtextColor = isLight ? "#444746" : "#9aa0a6"
+  const cardBg = isLight ? "#f0f4f9" : "#25292e"
+  const grabberBg = isLight ? "#c4c7c5" : "#444746"
+  const inputBg = isLight ? "#ffffff" : "#25292e"
+  const inputBorder = isLight
+    ? "1.5px solid #dadce0"
+    : "1.5px solid transparent"
+  const sparkleColor = isLight ? "#1a73e8" : "#8ab4f8"
+
+  const suggestions = [
+    "What can Ask Maps help me with today?",
+    "Free things to do near me",
+    "Help me plan a 2-day food trail in Singapore",
+  ]
+
   return (
-    <ReferenceScreen src="/assets/prototype/screen-2-clean.jpg">
-      <BackButton onPress={onClose} />
-      <Tap
-        label="Open chat history"
-        className="hotspot history-hotspot"
-        onPress={onHistory}
-      />
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        background: isLight ? "#f0f4f9" : "#121416",
+      }}
+    >
+      {/* 1. Map peek behind sheet */}
       <div
-        className="prompt-overlay"
-        contentEditable
-        suppressContentEditableWarning
-        role="textbox"
-        aria-label="Ask Maps prompt"
-        data-placeholder="Ask a question"
-        onInput={(e) => setPrompt(e.currentTarget.textContent ?? "")}
-      />
-      <Tap
-        label="Send prompt"
-        className="hotspot send-hotspot"
-        onPress={onSend}
-      />
-      <Tap
-        label="Use suggested prompt"
-        className="hotspot suggestion-hotspot"
-        onPress={onSend}
-      />
-      <Tap
-        label="Close Ask Maps"
-        className="hotspot close-hotspot"
-        onPress={onClose}
-      />
-      {prompt.length > 0 && (
-        <span className="typing-hint">Tap the blue arrow to send</span>
-      )}
-    </ReferenceScreen>
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 120,
+          overflow: "hidden",
+          opacity: 0.85,
+        }}
+      >
+        <img
+          src={mapImg}
+          alt=""
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: isLight
+              ? "linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.6) 100%)"
+              : "linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.6) 100%)",
+          }}
+        />
+      </div>
+
+      {/* 2. Main Sheet: starts below status bar (top: 48px) to avoid duplicating top bar */}
+      <div
+        style={{
+          position: "absolute",
+          top: 48,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: sheetBg,
+          borderTopLeftRadius: 28,
+          borderTopRightRadius: 28,
+          boxShadow: isLight
+            ? "0 -8px 24px rgba(0,0,0,0.12)"
+            : "0 -8px 24px rgba(0,0,0,0.5)",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          zIndex: 10,
+        }}
+      >
+        {/* Grab handle */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            paddingTop: 10,
+            paddingBottom: 6,
+          }}
+        >
+          <div
+            style={{
+              width: 36,
+              height: 4,
+              borderRadius: 2,
+              background: grabberBg,
+            }}
+          />
+        </div>
+
+        {/* Sheet Header */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "4px 18px 12px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <AskSparkle size={24} color={sparkleColor} />
+            <span
+              style={{
+                fontSize: 19,
+                fontWeight: 600,
+                color: textColor,
+                letterSpacing: "-0.01em",
+              }}
+            >
+              Ask Maps
+            </span>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <RoundAction
+              icon="history"
+              label="Chat history"
+              onPress={onHistory}
+            />
+            <RoundAction icon="edit" label="New chat" />
+            <RoundAction icon="close" label="Close" onPress={onClose} />
+          </div>
+        </div>
+
+        {/* Content Area */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            padding: "16px 18px 12px",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          {/* Greeting */}
+          <div style={{ textAlign: "center", marginTop: 12, marginBottom: 26 }}>
+            <h2
+              style={{
+                fontSize: 28,
+                fontWeight: 600,
+                color: sparkleColor,
+                margin: 0,
+                letterSpacing: "-0.02em",
+              }}
+            >
+              Hi, joshua
+            </h2>
+            <p
+              style={{
+                fontSize: 19,
+                fontWeight: 400,
+                color: subtextColor,
+                margin: "6px 0 0",
+              }}
+            >
+              How can I help you?
+            </p>
+          </div>
+
+          {/* Suggestion Chips */}
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              overflowX: "auto",
+              paddingBottom: 8,
+              scrollbarWidth: "none",
+            }}
+          >
+            {suggestions.map((text, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => {
+                  setPrompt(text)
+                  onSend()
+                }}
+                style={{
+                  flexShrink: 0,
+                  width: 170,
+                  minHeight: 88,
+                  padding: "14px 16px",
+                  borderRadius: 20,
+                  background: cardBg,
+                  border: "none",
+                  color: textColor,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  lineHeight: 1.35,
+                  textAlign: "left",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "flex-start",
+                }}
+              >
+                {text}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ flex: 1 }} />
+
+          {/* Prompt Input Box */}
+          <div
+            onClick={() => inputRef.current?.focus()}
+            style={{
+              borderRadius: 18,
+              background: inputBg,
+              border: inputBorder,
+              padding: "12px 16px",
+              minHeight: 52,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 10,
+              boxShadow: isLight
+                ? "0 2px 8px rgba(0,0,0,0.04)"
+                : "0 2px 8px rgba(0,0,0,0.2)",
+              cursor: "text",
+            }}
+          >
+            <input
+              ref={inputRef}
+              type="text"
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  onSend()
+                }
+              }}
+              placeholder="Ask a question"
+              aria-label="Ask Maps prompt"
+              className="ask-prompt-input"
+              autoFocus
+              style={{
+                flex: 1,
+                fontSize: 16,
+                color: textColor,
+                background: "transparent",
+                border: "none",
+                outline: "none",
+                padding: 0,
+                margin: 0,
+                width: "100%",
+                caretColor: sparkleColor,
+                fontFamily: "inherit",
+              }}
+            />
+            <span
+              style={{
+                color: isLight ? "#1f1f1f" : "#e8eaed",
+                marginLeft: 8,
+                flexShrink: 0,
+                pointerEvents: "none",
+              }}
+            >
+              <Icon name="mic" size={20} />
+            </span>
+          </div>
+
+          {prompt.length > 0 && (
+            <div
+              style={{
+                textAlign: "center",
+                fontSize: 12,
+                color: sparkleColor,
+                marginBottom: 6,
+              }}
+            >
+              Tap the blue arrow on the keyboard to send
+            </div>
+          )}
+        </div>
+
+        {/* iOS Keyboard */}
+        <IOSKeyboard
+          theme={theme}
+          onSend={onSend}
+          onKey={(char) => setPrompt((prev) => prev + char)}
+          onBackspace={() => setPrompt((prev) => prev.slice(0, -1))}
+        />
+      </div>
+    </div>
   )
 }
 
 function HistoryScreen({
+  theme = "dark",
   onOpen,
   onClose,
 }: {
+  theme?: Theme
   onOpen: () => void
   onClose: () => void
 }) {
+  const isLight = theme === "light"
+  const mapImg = isLight
+    ? "/assets/prototype/screen-4.jpg"
+    : "/assets/explore-home-map.jpg"
+  const sheetBg = isLight ? "#ffffff" : "#1b1f23"
+  const textColor = isLight ? "#1f1f1f" : "#e8eaed"
+  const subtextColor = isLight ? "#444746" : "#9aa0a6"
+  const cardBg = isLight ? "#f0f4f9" : "#25292e"
+  const grabberBg = isLight ? "#c4c7c5" : "#444746"
+
+  const historySections = [
+    {
+      heading: "Today",
+      items: [
+        {
+          title: 'organise my pins in the list "Food places t...',
+          time: "1 hour ago",
+          action: onOpen,
+        },
+      ],
+    },
+    {
+      heading: "Last seven days",
+      items: [
+        {
+          title: "give me a 2 day plan of food places base...",
+          time: "2 days ago",
+          action: onOpen,
+        },
+      ],
+    },
+  ]
+
   return (
-    <ReferenceScreen src="/assets/prototype/screen-3.jpg">
-      <BackButton onPress={onClose} />
-      <Tap
-        label="Open desired itinerary"
-        className="hotspot history-row-hotspot"
-        onPress={onOpen}
-      />
-      <span className="history-plan-title">
-        give me a 2 day plan of food places base...
-      </span>
-      <Tap
-        label="Close history"
-        className="hotspot history-close-hotspot"
-        onPress={onClose}
-      />
-    </ReferenceScreen>
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        background: isLight ? "#f0f4f9" : "#121416",
+      }}
+    >
+      {/* 1. Map peek behind sheet */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 120,
+          overflow: "hidden",
+          opacity: 0.85,
+        }}
+      >
+        <img
+          src={mapImg}
+          alt=""
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      </div>
+
+      {/* 2. Main Sheet: starts at top: 48px to avoid duplicating top bar */}
+      <div
+        style={{
+          position: "absolute",
+          top: 48,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: sheetBg,
+          borderTopLeftRadius: 28,
+          borderTopRightRadius: 28,
+          boxShadow: isLight
+            ? "0 -8px 24px rgba(0,0,0,0.12)"
+            : "0 -8px 24px rgba(0,0,0,0.5)",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          zIndex: 10,
+        }}
+      >
+        {/* Grab handle */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            paddingTop: 10,
+            paddingBottom: 6,
+          }}
+        >
+          <div
+            style={{
+              width: 36,
+              height: 4,
+              borderRadius: 2,
+              background: grabberBg,
+            }}
+          />
+        </div>
+
+        {/* Header */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "4px 18px 12px",
+          }}
+        >
+          <span
+            style={{
+              fontSize: 20,
+              fontWeight: 600,
+              color: textColor,
+              letterSpacing: "-0.01em",
+            }}
+          >
+            Your chat history
+          </span>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <RoundAction icon="edit" label="New chat" />
+            <RoundAction icon="close" label="Close" onPress={onClose} />
+          </div>
+        </div>
+
+        {/* Content */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            padding: "8px 18px 24px",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          {historySections.map((sec, sIdx) => (
+            <div key={sIdx} style={{ marginBottom: 16 }}>
+              <div
+                style={{
+                  fontSize: 15,
+                  fontWeight: 500,
+                  color: subtextColor,
+                  marginTop: sIdx === 0 ? 4 : 10,
+                  marginBottom: 10,
+                }}
+              >
+                {sec.heading}
+              </div>
+
+              {sec.items.map((item, idx) => (
+                <div
+                  key={idx}
+                  onClick={item.action}
+                  style={{
+                    background: cardBg,
+                    borderRadius: 16,
+                    padding: "14px 16px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    cursor: "pointer",
+                    transition: "transform 0.1s ease, background 0.15s ease",
+                  }}
+                >
+                  <div style={{ minWidth: 0, flex: 1, paddingRight: 12 }}>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 500,
+                        color: textColor,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {item.title}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: subtextColor,
+                        marginTop: 4,
+                      }}
+                    >
+                      {item.time}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                    }}
+                    aria-label="Delete history item"
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: subtextColor,
+                      display: "grid",
+                      placeItems: "center",
+                      cursor: "pointer",
+                      padding: 4,
+                    }}
+                  >
+                    <Icon name="trash" size={18} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -1248,13 +2424,15 @@ const chatItinerary = [
 ]
 
 function ChatScreen({
+  theme = "dark",
   onHistory,
   onBack,
   onClose,
   onSave,
 }: {
+  theme?: Theme
   onHistory: () => void
-  onBack: () => void
+  onBack?: () => void
   onClose: () => void
   onSave: () => void
 }) {
@@ -1262,52 +2440,88 @@ function ChatScreen({
   const [mapExpanded, setMapExpanded] = useState(
     new URLSearchParams(window.location.search).get("chatmap") === "1",
   )
+  const [isScrolled, setIsScrolled] = useState(false)
   const finishDrag = (clientY: number) => {
     if (dragStart.current === null) return
     const distance = clientY - dragStart.current
     setMapExpanded(distance > 24 ? true : distance < -24 ? false : !mapExpanded)
     dragStart.current = null
   }
+  const isLight = theme === "light"
+  const overviewMapSrc = isLight
+    ? "/assets/prototype/chat-overview-map-light.jpg"
+    : "/assets/prototype/chat-overview-map.jpg"
+
   return (
     <div className="chat-screen">
       <div className="chat-overview-map">
         <img
-          src="/assets/prototype/chat-overview-map.jpg"
-          alt="Overview map of the itinerary"
+          src={
+            isLight ? "/assets/prototype/drawer-down-map.jpg" : overviewMapSrc
+          }
+          alt="Map behind drawer"
         />
       </div>
-      <AskHeader onHistory={onHistory} onBack={onBack} onClose={onClose} />
+      {!isScrolled && (
+        <BackButton
+          onPress={onBack || onClose}
+          theme={theme}
+          label="Back to map"
+        />
+      )}
       <div
-        className={`chat-response-sheet ${mapExpanded ? "map-expanded" : ""}`}
+        className={`chat-response-sheet ${mapExpanded ? "map-expanded" : ""} ${
+          isScrolled ? "scrolled-up" : ""
+        }`}
       >
-        <div
-          className="chat-sheet-grabber"
-          role="button"
-          tabIndex={0}
-          aria-label={mapExpanded ? "Expand itinerary" : "Expand Overview Map"}
-          onPointerDown={(event) => {
-            dragStart.current = event.clientY
-          }}
-          onPointerUp={(event) => finishDrag(event.clientY)}
-          onKeyDown={(event) =>
-            (event.key === "Enter" || event.key === " ") &&
-            setMapExpanded(!mapExpanded)
-          }
-        >
-          <span />
-          <small>
-            {mapExpanded
-              ? "Slide up for itinerary"
-              : "Slide down for Overview Map"}
-          </small>
+        <div className="chat-sheet-header">
+          <div
+            className="chat-sheet-grabber"
+            role="button"
+            tabIndex={0}
+            aria-label={
+              mapExpanded ? "Expand itinerary" : "Expand Overview Map"
+            }
+            onPointerDown={(event) => {
+              dragStart.current = event.clientY
+            }}
+            onPointerUp={(event) => finishDrag(event.clientY)}
+            onKeyDown={(event) =>
+              (event.key === "Enter" || event.key === " ") &&
+              setMapExpanded(!mapExpanded)
+            }
+          >
+            <span />
+          </div>
+          <div className="ask-header-inner">
+            <div className="ask-lockup">
+              <AskSparkle size={24} color={isLight ? "#1a73e8" : "#8ab4f8"} />
+              <span>Ask Maps</span>
+            </div>
+            <div className="header-actions">
+              <RoundAction
+                icon="history"
+                label="Chat history"
+                onPress={onHistory}
+              />
+              <RoundAction icon="edit" label="New chat" />
+              <RoundAction icon="close" label="Close" onPress={onClose} />
+            </div>
+          </div>
         </div>
-        <div className="chat-itinerary-scroll">
+        <div
+          className="chat-itinerary-scroll"
+          onScroll={(e) => {
+            const scrolled = e.currentTarget.scrollTop > 10
+            setIsScrolled(scrolled)
+          }}
+        >
           <div className="conversation-user">
             Plan a two-day Singapore food itinerary with cafés, views and local
             desserts.
           </div>
           <div className="conversation-assistant">
-            <AskMark />
+            <AskSparkle size={22} color={isLight ? "#1a73e8" : "#8ab4f8"} />
             <span>
               <b>I’ve built a balanced two-day route.</b>
               <small>
@@ -1325,7 +2539,7 @@ function ChatScreen({
                 </div>
               )}
               <div className="place-recommendation">
-                <AskMark />
+                <AskSparkle size={20} color={isLight ? "#1a73e8" : "#8ab4f8"} />
                 <p>{place.recommendation}</p>
               </div>
               <div className="chat-place-heading">
@@ -1352,7 +2566,11 @@ function ChatScreen({
           <div className="chat-overview-card">
             <div className="section-title">Overview Map</div>
             <img
-              src="/assets/prototype/chat-overview-map.jpg"
+              src={
+                isLight
+                  ? "/assets/prototype/overview-map-card-light.jpg"
+                  : overviewMapSrc
+              }
               alt="Route overview"
             />
             <span>2 days · 5 places · Live route timing</span>
@@ -1472,6 +2690,18 @@ function YouScreen({
   )
 }
 
+type StopHistoryItem = {
+  id: string
+  title: string
+  meta: string
+  past?: boolean
+  current?: boolean
+  changed?: boolean
+  bounceSource?: string
+  originalTitle?: string
+  originalMeta?: string
+}
+
 type TimelineStop = {
   id: string
   time: string
@@ -1483,6 +2713,8 @@ type TimelineStop = {
   bounceSource?: string
   originalTitle?: string
   originalMeta?: string
+  isReplacement?: boolean
+  history?: StopHistoryItem[]
 }
 
 const initialStops: TimelineStop[] = [
@@ -1528,42 +2760,550 @@ type RouteDetail = {
   lineClass?: "downtown" | "thomson"
 }
 
+function getStopKey(stop: TimelineStop): string {
+  const str = ((stop.title || "") + " " + (stop.id || "")).toLowerCase()
+  if (str.includes("boat quay") || str.includes("boat-quay")) return "boat-quay"
+  if (str.includes("kahve")) return "kahve"
+  if (str.includes("suntec")) return "suntec"
+  if (str.includes("kobashi") || str.includes("kōbashi")) return "kobashi"
+  if (str.includes("maxwell")) return "maxwell"
+  if (str.includes("loulouca")) return "loulouca"
+  if (str.includes("green") || str.includes("capitaspring"))
+    return "green-oasis"
+  return stop.id
+}
+
+function formatMinutesToTime(totalMins: number): string {
+  const hours24 = Math.floor(totalMins / 60) % 24
+  const mins = totalMins % 60
+  const period = hours24 >= 12 ? "pm" : "am"
+  const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12
+  const paddedMins = mins < 10 ? `0${mins}` : `${mins}`
+  return `${hours12}:${paddedMins} ${period}`
+}
+
+function recalculateStopTimes(stops: TimelineStop[]): TimelineStop[] {
+  const kobashiIdx = stops.findIndex((s) => s.id === "kobashi" || s.current)
+  if (kobashiIdx < 0) return stops
+
+  const result = stops.map((s) => ({ ...s }))
+
+  // Find added stops between KŌBASHI and Green Oasis (or end of Day 1)
+  const greenOasisIdx = result.findIndex(
+    (s, idx) =>
+      idx > kobashiIdx &&
+      !s.changed &&
+      !s.bounceSource &&
+      (s.id.includes("green") || s.title.toLowerCase().includes("green")),
+  )
+
+  const endIdx = greenOasisIdx !== -1 ? greenOasisIdx : result.length - 1
+  const addedCount = endIdx - kobashiIdx - 1
+
+  if (addedCount <= 0) {
+    if (greenOasisIdx !== -1) {
+      result[greenOasisIdx].time = "3:30 pm"
+    }
+    return result
+  }
+
+  if (addedCount === 1) {
+    result[kobashiIdx + 1].time = "2:00 pm"
+    if (greenOasisIdx !== -1) {
+      result[greenOasisIdx].time = "3:30 pm"
+    }
+  } else if (addedCount === 2) {
+    result[kobashiIdx + 1].time = "1:45 pm"
+    result[kobashiIdx + 2].time = "2:35 pm"
+    if (greenOasisIdx !== -1) {
+      result[greenOasisIdx].time = "3:30 pm"
+    }
+  } else if (addedCount === 3) {
+    result[kobashiIdx + 1].time = "1:45 pm"
+    result[kobashiIdx + 2].time = "2:30 pm"
+    result[kobashiIdx + 3].time = "3:15 pm"
+    if (greenOasisIdx !== -1) {
+      result[greenOasisIdx].time = "4:00 pm"
+    }
+  } else {
+    const startMins = 13 * 60 + 40 // 1:40 pm
+    for (let i = 0; i < addedCount; i++) {
+      const mins = startMins + i * 35
+      result[kobashiIdx + 1 + i].time = formatMinutesToTime(mins)
+    }
+    if (greenOasisIdx !== -1) {
+      const endMins = startMins + addedCount * 35 + 15
+      result[greenOasisIdx].time = formatMinutesToTime(endMins)
+    }
+  }
+
+  return result
+}
+
 function getRouteDetail(
   from: TimelineStop,
   to: TimelineStop,
   index: number,
 ): RouteDetail {
-  if (from.id === "kahve")
+  const fromKey = getStopKey(from)
+  const toKey = getStopKey(to)
+  const pair = `${fromKey}->${toKey}`
+
+  switch (pair) {
+    case "kahve->suntec":
+      return {
+        icon: "train",
+        title: "Downtown Line",
+        detail: "DT17 → DT15 · 12 min",
+        lineClass: "downtown",
+      }
+    case "suntec->kahve":
+      return {
+        icon: "bus",
+        title: "Bus 107",
+        detail: "5 stops · 18 min",
+      }
+    case "suntec->kobashi":
+      return {
+        icon: "bus",
+        title: "Bus 107",
+        detail: "5 stops · 18 min",
+      }
+    case "kobashi->suntec":
+      return {
+        icon: "bus",
+        title: "Bus 107",
+        detail: "5 stops · 18 min",
+      }
+    case "suntec->loulouca":
+      return {
+        icon: "bus",
+        title: "Bus 107",
+        detail: "6 stops · 20 min",
+      }
+    case "loulouca->suntec":
+      return {
+        icon: "bus",
+        title: "Bus 107",
+        detail: "6 stops · 20 min",
+      }
+    case "suntec->maxwell":
+      return {
+        icon: "train",
+        title: "Downtown Line",
+        detail: "DT15 → DT18 · 10 min",
+        lineClass: "downtown",
+      }
+    case "maxwell->suntec":
+      return {
+        icon: "train",
+        title: "Downtown Line",
+        detail: "DT18 → DT15 · 10 min",
+        lineClass: "downtown",
+      }
+    case "suntec->green-oasis":
+      return {
+        icon: "train",
+        title: "Downtown Line",
+        detail: "DT15 → DT18 · 10 min",
+        lineClass: "downtown",
+      }
+    case "kobashi->maxwell":
+      return { icon: "walk", title: "Walk", detail: "350 m · 4 min" }
+    case "kobashi->boat-quay":
+      return { icon: "walk", title: "Walk", detail: "800 m · 11 min" }
+    case "boat-quay->kobashi":
+      return { icon: "walk", title: "Walk", detail: "800 m · 11 min" }
+    case "boat-quay->green-oasis":
+      return { icon: "bus", title: "Bus 80", detail: "4 stops · 16 min" }
+    case "green-oasis->boat-quay":
+      return { icon: "bus", title: "Bus 80", detail: "4 stops · 16 min" }
+    case "boat-quay->loulouca":
+      return { icon: "bus", title: "Bus 80", detail: "4 stops · 16 min" }
+    case "boat-quay->maxwell":
+      return { icon: "walk", title: "Walk", detail: "600 m · 8 min" }
+    case "maxwell->kobashi":
+      return { icon: "walk", title: "Walk", detail: "350 m · 4 min" }
+    case "kobashi->loulouca":
+      return { icon: "bus", title: "Bus 80", detail: "4 stops · 9 min" }
+    case "loulouca->kobashi":
+      return { icon: "walk", title: "Walk", detail: "450 m · 6 min" }
+    case "kobashi->kahve":
+      return { icon: "walk", title: "Walk", detail: "750 m · 10 min" }
+    case "kahve->kobashi":
+      return { icon: "walk", title: "Walk", detail: "750 m · 10 min" }
+    case "kobashi->green-oasis":
+      return { icon: "walk", title: "Walk", detail: "600 m · 8 min" }
+    case "kahve->loulouca":
+      return { icon: "bus", title: "Bus 80", detail: "4 stops · 9 min" }
+    case "loulouca->kahve":
+      return { icon: "walk", title: "Walk", detail: "700 m · 9 min" }
+    case "kahve->maxwell":
+      return { icon: "walk", title: "Walk", detail: "650 m · 8 min" }
+    case "maxwell->kahve":
+      return { icon: "walk", title: "Walk", detail: "650 m · 8 min" }
+    case "kahve->green-oasis":
+      return { icon: "walk", title: "Walk", detail: "600 m · 8 min" }
+    case "maxwell->loulouca":
+      return { icon: "walk", title: "Walk", detail: "350 m · 5 min" }
+    case "loulouca->maxwell":
+      return { icon: "walk", title: "Walk", detail: "350 m · 5 min" }
+    case "maxwell->green-oasis":
+      return { icon: "walk", title: "Walk", detail: "750 m · 11 min" }
+    case "loulouca->green-oasis":
+      return { icon: "walk", title: "Walk", detail: "750 m · 11 min" }
+  }
+
+  if (fromKey === "green-oasis") {
     return {
-      icon: "train" as IconName,
-      title: "Downtown Line",
-      detail: "DT17 → DT15 · 12 min",
-      lineClass: "downtown",
-    }
-  if (from.id === "suntec")
-    return {
-      icon: "bus" as IconName,
-      title: "Bus 107",
-      detail: "5 stops · 18 min",
-    }
-  if (from.id === "kobashi" && (to.id === "bounce-kobashi" || to.title.toLowerCase().includes("maxwell")))
-    return { icon: "walk" as IconName, title: "Walk", detail: "350 m · 4 min" }
-  if ((from.id === "bounce-kobashi" || from.title.toLowerCase().includes("maxwell")) && to.id === "green-oasis")
-    return { icon: "walk" as IconName, title: "Walk", detail: "750 m · 11 min" }
-  if (from.id === "kobashi" || to.bounceSource === "kobashi")
-    return { icon: "walk" as IconName, title: "Walk", detail: "350 m · 4 min" }
-  if (from.bounceSource === "kobashi")
-    return { icon: "walk" as IconName, title: "Walk", detail: "750 m · 11 min" }
-  if (from.id === "green-oasis")
-    return {
-      icon: "train" as IconName,
+      icon: "train",
       title: "Thomson–East Coast Line",
       detail: "TE19 → TE18 · 14 min",
       lineClass: "thomson",
     }
+  }
+
   return index % 2 === 0
-    ? { icon: "walk" as IconName, title: "Walk", detail: "450 m · 6 min" }
-    : { icon: "bus" as IconName, title: "Bus 80", detail: "4 stops · 16 min" }
+    ? { icon: "walk", title: "Walk", detail: "450 m · 6 min" }
+    : { icon: "bus", title: "Bus 80", detail: "4 stops · 16 min" }
+}
+
+type SwipeableTimelineRowProps = {
+  stop: TimelineStop
+  isRemovable: boolean
+  onPlace: () => void
+  onDelete: () => void
+  onUndo?: () => void
+  currentRef?: React.Ref<HTMLDivElement>
+  isOpen: boolean
+  onOpen: () => void
+  onClose: () => void
+  isAddExpanded?: boolean
+  onToggleAdd?: () => void
+  actionsRef?: (el: HTMLDivElement | null) => void
+  onBounce?: () => void
+  onSearch?: () => void
+}
+
+function SwipeableTimelineRow({
+  stop,
+  isRemovable,
+  onPlace,
+  onDelete,
+  onUndo,
+  currentRef,
+  isOpen,
+  onOpen,
+  onClose,
+  isAddExpanded = false,
+  onToggleAdd,
+  actionsRef,
+  onBounce,
+  onSearch,
+}: SwipeableTimelineRowProps) {
+  const [offsetX, setOffsetX] = useState(0)
+  const isDragging = useRef(false)
+  const startX = useRef(0)
+  const startY = useRef(0)
+  const hasLockedDirection = useRef(false)
+  const isHorizontalDrag = useRef(false)
+  const currentOffset = useRef(0)
+
+  const isReplacedLocation = Boolean(
+    stop.isReplacement ||
+      (stop.history && stop.history.length > 0) ||
+      Boolean(stop.originalTitle) ||
+      (stop.changed &&
+        Boolean(
+          stop.meta &&
+            (stop.meta.includes("Replaced") ||
+              stop.meta.includes("Bounce replacement")),
+        )),
+  )
+  const hasUndo = Boolean(onUndo && isReplacedLocation)
+  const openOffset = hasUndo ? -152 : -76
+  const rubberOffset = hasUndo ? -180 : -90
+  const openThreshold = hasUndo ? -45 : -38
+  const closeThreshold = hasUndo ? -105 : -38
+  const deleteThreshold = hasUndo ? -260 : -160
+
+  useEffect(() => {
+    if (!isDragging.current) {
+      const target = isOpen ? openOffset : 0
+      setOffsetX(target)
+      currentOffset.current = target
+    }
+  }, [isOpen, openOffset])
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (!isRemovable) return
+    isDragging.current = true
+    startX.current = e.clientX
+    startY.current = e.clientY
+    hasLockedDirection.current = false
+    isHorizontalDrag.current = false
+    try {
+      ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+    } catch {}
+  }
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging.current) return
+    const diffX = e.clientX - startX.current
+    const diffY = e.clientY - startY.current
+
+    if (!hasLockedDirection.current) {
+      if (Math.abs(diffX) > 6 || Math.abs(diffY) > 6) {
+        hasLockedDirection.current = true
+        isHorizontalDrag.current = Math.abs(diffX) > Math.abs(diffY)
+      }
+    }
+
+    if (!isHorizontalDrag.current) return
+
+    const base = isOpen ? openOffset : 0
+    let target = base + diffX
+
+    if (target > 0) {
+      target = target * 0.15
+    } else if (target < rubberOffset) {
+      target = rubberOffset + (target - rubberOffset) * 0.25
+    }
+
+    currentOffset.current = target
+    setOffsetX(target)
+  }
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!isDragging.current) return
+    isDragging.current = false
+    try {
+      ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
+    } catch {}
+
+    if (!isHorizontalDrag.current) {
+      if (isOpen) {
+        onClose()
+        setOffsetX(0)
+        currentOffset.current = 0
+      } else {
+        onPlace()
+      }
+      return
+    }
+
+    const finalOffset = currentOffset.current
+    if (finalOffset < deleteThreshold) {
+      onDelete()
+      return
+    }
+
+    if (isOpen) {
+      if (finalOffset > closeThreshold) {
+        onClose()
+        setOffsetX(0)
+        currentOffset.current = 0
+      } else {
+        onOpen()
+        setOffsetX(openOffset)
+        currentOffset.current = openOffset
+      }
+    } else {
+      if (finalOffset < openThreshold) {
+        onOpen()
+        setOffsetX(openOffset)
+        currentOffset.current = openOffset
+      } else {
+        onClose()
+        setOffsetX(0)
+        currentOffset.current = 0
+      }
+    }
+  }
+
+  const handlePointerCancel = () => {
+    isDragging.current = false
+    const target = isOpen ? openOffset : 0
+    setOffsetX(target)
+    currentOffset.current = target
+  }
+
+  return (
+    <div
+      className={`timeline-row ${stop.current ? "current" : ""} ${
+        stop.past ? "past" : ""
+      } ${stop.changed ? "changed" : ""}`}
+      ref={currentRef}
+    >
+      <span className="time">{stop.time}</span>
+      <i className="timeline-dot" />
+
+      <div className="timeline-card-col">
+        {isRemovable ? (
+          <div className="swipeable-pill-container">
+            <div
+              className="swipe-actions-group"
+              style={{
+                opacity: offsetX < 0 ? 1 : 0,
+                visibility: offsetX < 0 ? "visible" : "hidden",
+              }}
+            >
+              {hasUndo && (
+                <button
+                  type="button"
+                  className="swipe-undo-action"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setOffsetX(0)
+                    currentOffset.current = 0
+                    onClose()
+                    onUndo?.()
+                  }}
+                  aria-label={`Undo changes to ${stop.title}`}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="22"
+                    height="22"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="undo-icon"
+                  >
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                    <path d="M3 3v5h5" />
+                  </svg>
+                  <span className="swipe-undo-text">Undo</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                className="swipe-delete-action"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onDelete()
+                }}
+                aria-label={`Delete ${stop.title}`}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="22"
+                  height="22"
+                  fill="currentColor"
+                  className="delete-bin-icon"
+                >
+                  <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+                </svg>
+                <span className="swipe-delete-text">Delete</span>
+              </button>
+            </div>
+
+            <div
+              className="time-pill swipable-pill"
+              style={{
+                transform: `translate3d(${offsetX}px, 0, 0)`,
+                transition: isDragging.current
+                  ? "none"
+                  : "transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)",
+                touchAction: "pan-y",
+                cursor: "grab",
+              }}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerCancel}
+            >
+              <span>
+                <b>{stop.title}</b>
+                <small>{stop.meta}</small>
+              </span>
+              <Icon name="chevron" />
+            </div>
+          </div>
+        ) : (
+          <Tap
+            label={`Open ${stop.title}`}
+            className="time-pill"
+            onPress={onPlace}
+          >
+            <span>
+              <b>{stop.title}</b>
+              <small>{stop.meta}</small>
+            </span>
+            <Icon name="chevron" />
+          </Tap>
+        )}
+
+        {/* Button connected to the bottom of the location button */}
+        <button
+          type="button"
+          className={`timeline-connected-plus-btn ${
+            isAddExpanded ? "active" : ""
+          }`}
+          onClick={(e) => {
+            e.stopPropagation()
+            onToggleAdd?.()
+          }}
+          aria-label={`Add stop after ${stop.title}`}
+          aria-expanded={isAddExpanded}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="15"
+            height="15"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="plus-icon-svg"
+          >
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </button>
+
+        {/* Slide-Down Action Buttons ("Bounce" and "Search") */}
+        <div
+          ref={actionsRef}
+          className={`timeline-insert-actions ${
+            isAddExpanded ? "expanded" : "collapsed"
+          }`}
+        >
+          <button
+            type="button"
+            className="insert-action-btn bounce-btn"
+            onClick={(e) => {
+              e.stopPropagation()
+              onBounce?.()
+            }}
+            aria-label={`Bounce options after ${stop.title}`}
+          >
+            <Icon name="shuffle" size={17} />
+            <span>Bounce</span>
+          </button>
+
+          <button
+            type="button"
+            className="insert-action-btn search-btn"
+            onClick={(e) => {
+              e.stopPropagation()
+              onSearch?.()
+            }}
+            aria-label={`Search places to add after ${stop.title}`}
+          >
+            <Icon name="search" size={17} />
+            <span>Search</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function PlanHeader({ updated = false }: { updated?: boolean }) {
@@ -1572,6 +3312,1159 @@ function PlanHeader({ updated = false }: { updated?: boolean }) {
       <div className="eyebrow">{updated ? "UPDATED PLAN" : "SAVED PLAN"}</div>
       <div className="plan-title">Singapore food trail</div>
       <div className="plan-meta">3 days · 8 places · Ask Maps</div>
+    </div>
+  )
+}
+
+type DropUpOption = {
+  index: number
+  title: string
+  meta: string
+  type: string
+  route: {
+    icon: IconName
+    duration: string
+    label: string
+    badge?: string
+    badgeClass?: string
+  }
+}
+
+function CollapsedDrawerRoute({
+  fromTitle,
+  fromMeta,
+  fromKicker = "CURRENT LOCATION",
+  isCurrent = true,
+  onFromPress,
+  toTitle,
+  toMeta,
+  toKicker = "NEXT STOP",
+  isNew = false,
+  onToPress,
+  routeIcon = "walk" as IconName,
+  routeDuration = "4 min",
+  routeSub = "350 m",
+  routeBadge,
+  routeBadgeClass,
+  dropUpOptions,
+  onSelectDropUpOption,
+  isDropUpOpen = false,
+  onCloseDropUp,
+  arrowDirection,
+}: {
+  fromTitle: string
+  fromMeta: string
+  fromKicker?: string
+  isCurrent?: boolean
+  onFromPress?: () => void
+  toTitle: string
+  toMeta: string
+  toKicker?: string
+  isNew?: boolean
+  onToPress?: () => void
+  routeIcon?: IconName
+  routeDuration?: string
+  routeSub?: string
+  routeBadge?: string | null
+  routeBadgeClass?: string
+  dropUpOptions?: DropUpOption[]
+  onSelectDropUpOption?: (index: number) => void
+  isDropUpOpen?: boolean
+  onCloseDropUp?: () => void
+  arrowDirection?: "up" | "right"
+}) {
+  const isUpArrow =
+    arrowDirection === "up" ||
+    Boolean(dropUpOptions && dropUpOptions.length > 0)
+  const chevronTransform = isUpArrow
+    ? isDropUpOpen
+      ? "rotate(90deg)"
+      : "rotate(-90deg)"
+    : isDropUpOpen
+      ? "rotate(-90deg)"
+      : "rotate(0deg)"
+
+  return (
+    <div className="collapsed-drawer-route">
+      {/* 1. Left Box: Current Location (e.g. KŌBASHI) */}
+      <Tap
+        label={`Location: ${fromTitle}`}
+        className="collapsed-box current-box"
+        onPress={onFromPress}
+      >
+        <div className="box-header">
+          {isCurrent && <span className="current-pulse-dot" />}
+          <span className="box-kicker">{fromKicker}</span>
+        </div>
+        <b className="box-title">{fromTitle}</b>
+        <small className="box-meta">{fromMeta}</small>
+      </Tap>
+
+      {/* 2. Middle: Transport Mode & Travel Time */}
+      <div className="collapsed-connector">
+        <div className="connector-mode">
+          <div className="connector-icon-wrap">
+            <Icon name={routeIcon} size={15} />
+          </div>
+          <span className="connector-time">{routeDuration}</span>
+        </div>
+        <div className="connector-arrow-line">
+          <span className="line-segment" />
+          <span className="arrow-glyph">›</span>
+        </div>
+        {routeBadge ? (
+          <span
+            className={`transit-badge ${routeBadgeClass || ""}`}
+            style={{
+              minWidth: "22px",
+              height: "16px",
+              fontSize: "9px",
+              padding: "0 4px",
+              borderRadius: "4px",
+            }}
+          >
+            {routeBadge}
+          </span>
+        ) : (
+          <small className="connector-sub">{routeSub}</small>
+        )}
+      </div>
+
+      {/* 3. Right Box: Next Location Details with Drop-Up Menu */}
+      <div className="collapsed-box-anchor">
+        {isDropUpOpen && dropUpOptions && dropUpOptions.length > 0 && (
+          <>
+            <div
+              className="dropup-backdrop"
+              onClick={(e) => {
+                e.stopPropagation()
+                onCloseDropUp?.()
+              }}
+            />
+            <div
+              className="bounce-dropup-menu"
+              role="menu"
+              aria-label="Other bounce options"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="dropup-list">
+                {dropUpOptions.map((opt) => (
+                  <div
+                    key={opt.title}
+                    className="dropup-option-item"
+                    role="menuitem"
+                    tabIndex={0}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onSelectDropUpOption?.(opt.index)
+                    }}
+                  >
+                    {/* Left: Mode of transport and travel duration */}
+                    <div className="dropup-mode-col">
+                      <div className="dropup-icon-wrap">
+                        <Icon name={opt.route.icon} size={15} />
+                      </div>
+                      <span className="dropup-duration">
+                        {opt.route.duration}
+                      </span>
+                      {opt.route.badge ? (
+                        <span
+                          className={`transit-badge ${opt.route.badgeClass || ""}`}
+                          style={{
+                            minWidth: "22px",
+                            height: "16px",
+                            fontSize: "9px",
+                            padding: "0 4px",
+                            borderRadius: "4px",
+                          }}
+                        >
+                          {opt.route.badge}
+                        </span>
+                      ) : (
+                        <small className="dropup-mode-label">
+                          {opt.route.label}
+                        </small>
+                      )}
+                    </div>
+
+                    {/* Divider */}
+                    <div className="dropup-divider" />
+
+                    {/* Right: Same formatting as the box */}
+                    <div className="dropup-info-col">
+                      <div className="dropup-top-line">
+                        <span
+                          className={`box-kicker ${
+                            opt.index === 1 ? "is-new-kicker" : "next-kicker"
+                          }`}
+                        >
+                          {opt.type}
+                        </span>
+                        <span className="dropup-option-number">
+                          0{opt.index + 1}
+                        </span>
+                      </div>
+                      <b className="box-title">{opt.title}</b>
+                      <small className="box-meta">{opt.meta}</small>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        <Tap
+          label={`Destination: ${toTitle}`}
+          className={`collapsed-box next-box ${isNew ? "is-new" : ""}`}
+          onPress={onToPress}
+        >
+          <div className="box-header">
+            <span
+              className={`box-kicker ${
+                isNew ? "is-new-kicker" : "next-kicker"
+              }`}
+            >
+              {toKicker}
+            </span>
+            <span
+              className="dropup-chevron-wrap"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "14px",
+                height: "14px",
+                transform: chevronTransform,
+                transformOrigin: "center center",
+                transition: "transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)",
+                color: "var(--text-low, #5f6368)",
+              }}
+            >
+              <Icon name="chevron" size={12} />
+            </span>
+          </div>
+          <b className="box-title">{toTitle}</b>
+          <small className="box-meta">{toMeta}</small>
+        </Tap>
+      </div>
+    </div>
+  )
+}
+
+function ListOptionsMenu({
+  isOpen,
+  theme,
+  onClose,
+  onShare,
+  onInvite,
+  onToast,
+}: {
+  isOpen: boolean
+  theme: Theme
+  onClose: () => void
+  onShare: () => void
+  onInvite: () => void
+  onToast?: (msg: string) => void
+}) {
+  if (!isOpen) return null
+
+  const isLight = theme === "light"
+
+  const items = [
+    {
+      label: "Hide on your map",
+      action: () => onToast?.("Plan hidden on your map"),
+    },
+    { label: "Edit list", action: () => onToast?.("Editing list") },
+    { label: "Invite collaborators", action: onInvite },
+    { label: "Share list", action: onShare },
+    { label: "Sharing options", action: onInvite },
+    {
+      label: "Delete list",
+      action: () => onToast?.("Default plan cannot be deleted"),
+      isDestructive: true,
+    },
+    { label: "Cancel", action: onClose },
+  ]
+
+  return (
+    <div
+      className="list-options-modal-root"
+      style={{
+        position: "absolute",
+        inset: 0,
+        zIndex: 140,
+        pointerEvents: "auto",
+      }}
+    >
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "rgba(0, 0, 0, 0.62)",
+          backdropFilter: "blur(2px)",
+          WebkitBackdropFilter: "blur(2px)",
+          animation: "menuFadeIn 0.2s ease-out",
+        }}
+      />
+
+      {/* Centered Modal Card */}
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: "calc(100% - 44px)",
+          maxWidth: "320px",
+          background: isLight ? "#ffffff" : "#222527",
+          borderRadius: "26px",
+          padding: "16px 14px",
+          boxShadow: isLight
+            ? "0 14px 40px rgba(0,0,0,0.22)"
+            : "0 16px 44px rgba(0,0,0,0.65)",
+          border: isLight
+            ? "1px solid rgba(0,0,0,0.06)"
+            : "1px solid rgba(255,255,255,0.08)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "8px",
+          animation: "menuPop 0.22s cubic-bezier(0.16, 1, 0.3, 1)",
+          boxSizing: "border-box",
+        }}
+      >
+        {items.map((item, idx) => (
+          <button
+            key={idx}
+            onClick={item.action}
+            style={{
+              height: "46px",
+              borderRadius: "999px",
+              background: isLight ? "#f1f3f4" : "#363a3d",
+              border: "none",
+              color: item.isDestructive
+                ? isLight
+                  ? "#d93025"
+                  : "#f28b82"
+                : isLight
+                  ? "#202124"
+                  : "#ffffff",
+              fontSize: "14.5px",
+              fontWeight: 500,
+              display: "grid",
+              placeItems: "center",
+              cursor: "pointer",
+              transition: "background-color 0.15s ease, transform 0.1s ease",
+              userSelect: "none",
+              outline: "none",
+            }}
+            onMouseDown={(e) => {
+              e.currentTarget.style.transform = "scale(0.98)"
+            }}
+            onMouseUp={(e) => {
+              e.currentTarget.style.transform = "scale(1)"
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "scale(1)"
+            }}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function InviteDrawer({
+  isOpen,
+  theme,
+  title = "Invite to edit",
+  onClose,
+  onCopy,
+}: {
+  isOpen: boolean
+  theme: Theme
+  title?: string
+  onClose: () => void
+  onCopy: () => void
+}) {
+  if (!isOpen) return null
+
+  return (
+    <div
+      className="invite-drawer-root"
+      style={{
+        position: "absolute",
+        inset: 0,
+        zIndex: 150,
+        pointerEvents: "auto",
+      }}
+    >
+      {/* Backdrop */}
+      <div
+        className="invite-backdrop"
+        onClick={onClose}
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "rgba(0, 0, 0, 0.55)",
+          backdropFilter: "blur(3px)",
+          WebkitBackdropFilter: "blur(3px)",
+          animation: "inviteFadeIn 0.22s ease-out",
+        }}
+      />
+
+      {/* Drawer Card */}
+      <div
+        className={`invite-sheet ${theme === "light" ? "light" : "dark"}`}
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          maxHeight: "84%",
+          borderTopLeftRadius: "24px",
+          borderTopRightRadius: "24px",
+          background: theme === "light" ? "#f2f2f7" : "#1c1c1e",
+          color: theme === "light" ? "#000000" : "#ffffff",
+          boxShadow: "0 -10px 40px rgba(0,0,0,0.45)",
+          overflow: "hidden",
+          animation: "inviteSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1)",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {/* Grab Handle */}
+        <div
+          style={{
+            width: "36px",
+            height: "5px",
+            borderRadius: "999px",
+            background: theme === "light" ? "#c7c7cc" : "#48484a",
+            margin: "8px auto 6px",
+            cursor: "pointer",
+          }}
+          onClick={onClose}
+        />
+
+        {/* Header Line: "Invite to edit" or "Share to view" */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "4px 18px 12px",
+            borderBottom:
+              theme === "light"
+                ? "1px solid rgba(0,0,0,0.06)"
+                : "1px solid rgba(255,255,255,0.08)",
+          }}
+        >
+          <span
+            style={{
+              fontSize: "16px",
+              fontWeight: 700,
+              letterSpacing: "-0.01em",
+              color: theme === "light" ? "#1c1c1e" : "#ffffff",
+            }}
+          >
+            {title}
+          </span>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            style={{
+              width: "28px",
+              height: "28px",
+              borderRadius: "50%",
+              background:
+                theme === "light"
+                  ? "rgba(0,0,0,0.06)"
+                  : "rgba(255,255,255,0.12)",
+              border: "none",
+              color: theme === "light" ? "#636366" : "#ffffff",
+              display: "grid",
+              placeItems: "center",
+              cursor: "pointer",
+            }}
+          >
+            <Icon name="close" size={15} />
+          </button>
+        </div>
+
+        {/* Scrollable Sheet Content */}
+        <div
+          style={{
+            overflowY: "auto",
+            padding: "14px 16px 24px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
+          }}
+        >
+          {/* 1. Preview Card */}
+          <div
+            style={{
+              background: theme === "light" ? "#ffffff" : "#2c2c2e",
+              borderRadius: "14px",
+              padding: "10px 12px",
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              boxShadow:
+                theme === "light"
+                  ? "0 1px 3px rgba(0,0,0,0.08)"
+                  : "0 2px 8px rgba(0,0,0,0.25)",
+              border:
+                theme === "light"
+                  ? "1px solid rgba(0,0,0,0.04)"
+                  : "1px solid rgba(255,255,255,0.06)",
+            }}
+          >
+            {/* Map Thumbnail */}
+            <div
+              style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "10px",
+                overflow: "hidden",
+                flexShrink: 0,
+                background: "#4285f4",
+                position: "relative",
+              }}
+            >
+              <img
+                src="/assets/prototype/screen-4.jpg"
+                alt=""
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  color: theme === "light" ? "#1c1c1e" : "#ffffff",
+                }}
+              >
+                Singapore food trail · Ask Maps
+              </div>
+              <div
+                style={{
+                  fontSize: "12px",
+                  color: theme === "light" ? "#8e8e93" : "#98989d",
+                  marginTop: "2px",
+                }}
+              >
+                maps.google.com
+              </div>
+            </div>
+          </div>
+
+          {/* 2. Contacts Row */}
+          <div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(4, 1fr)",
+                gap: "8px",
+                justifyItems: "center",
+                paddingBottom: "2px",
+              }}
+            >
+              {/* Contact 1: MacBook Air (replaced "Joshy & Beany's") */}
+              <div
+                onClick={onCopy}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  width: "100%",
+                  cursor: "pointer",
+                }}
+              >
+                <div
+                  style={{
+                    width: "64px",
+                    height: "64px",
+                    borderRadius: "50%",
+                    background: theme === "light" ? "#ffffff" : "#2c2c2e",
+                    display: "grid",
+                    placeItems: "center",
+                    position: "relative",
+                    boxShadow:
+                      theme === "light"
+                        ? "0 2px 6px rgba(0,0,0,0.12)"
+                        : "0 2px 6px rgba(0,0,0,0.35)",
+                  }}
+                >
+                  {/* Laptop Icon Graphic */}
+                  <svg width="34" height="28" viewBox="0 0 24 24" fill="none">
+                    <rect
+                      x="3"
+                      y="4"
+                      width="18"
+                      height="12"
+                      rx="2"
+                      fill={theme === "light" ? "#e2e8f0" : "#3a3a3c"}
+                      stroke={theme === "light" ? "#94a3b8" : "#71717a"}
+                      strokeWidth="1.5"
+                    />
+                    <rect
+                      x="5"
+                      y="6"
+                      width="14"
+                      height="8"
+                      rx="1"
+                      fill="#38bdf8"
+                      fillOpacity="0.85"
+                    />
+                    <path
+                      d="M1 18h22"
+                      stroke={theme === "light" ? "#94a3b8" : "#71717a"}
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  {/* AirDrop Badge */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: "-2px",
+                      right: "-2px",
+                      width: "22px",
+                      height: "22px",
+                      borderRadius: "50%",
+                      background: "#007aff",
+                      border:
+                        theme === "light"
+                          ? "2px solid #f2f2f7"
+                          : "2px solid #1c1c1e",
+                      display: "grid",
+                      placeItems: "center",
+                    }}
+                  >
+                    <svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#ffffff"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                    >
+                      <path d="M5 18a10 10 0 0 1 0-12" />
+                      <path d="M8.5 15a5.5 5.5 0 0 1 0-6" />
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="1.5"
+                        fill="#ffffff"
+                        stroke="none"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <span
+                  style={{
+                    fontSize: "11px",
+                    color: theme === "light" ? "#1c1c1e" : "#f2f2f7",
+                    marginTop: "6px",
+                    textAlign: "center",
+                    lineHeight: "1.2",
+                    maxWidth: "80px",
+                  }}
+                >
+                  MacBook Air
+                </span>
+              </div>
+
+              {/* Contact 2: Alex Chen (replaced "Joshua Wang") */}
+              <div
+                onClick={onCopy}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  width: "100%",
+                  cursor: "pointer",
+                }}
+              >
+                <div
+                  style={{
+                    width: "64px",
+                    height: "64px",
+                    borderRadius: "50%",
+                    background: theme === "light" ? "#e5e5ea" : "#3a3a3c",
+                    display: "grid",
+                    placeItems: "center",
+                    position: "relative",
+                    color: theme === "light" ? "#636366" : "#aeaeb2",
+                  }}
+                >
+                  <Icon name="users" size={26} />
+                  {/* Discord Badge */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: "-2px",
+                      right: "-2px",
+                      width: "22px",
+                      height: "22px",
+                      borderRadius: "50%",
+                      background: "#5865F2",
+                      border:
+                        theme === "light"
+                          ? "2px solid #f2f2f7"
+                          : "2px solid #1c1c1e",
+                      display: "grid",
+                      placeItems: "center",
+                    }}
+                  >
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="#ffffff"
+                    >
+                      <path d="M20.3 4.4A19.6 19.6 0 0 0 15.4 3a.1.1 0 0 0-.1 0c-.2.4-.4.9-.6 1.3A18 18 0 0 0 9.3 4.3C9.1 3.9 8.9 3.4 8.7 3a.1.1 0 0 0-.1 0 19.6 19.6 0 0 0-4.9 1.4.1.1 0 0 0 0 0C.7 9 .1 13.5.3 17.9a.1.1 0 0 0 0 0 19.7 19.7 0 0 0 6 3 .1.1 0 0 0 .1 0c.5-.7.9-1.4 1.3-2.1a.1.1 0 0 0-.1-.1 13 13 0 0 1-1.8-.9.1.1 0 0 1 0-.2c.1-.1.3-.2.4-.3a14 14 0 0 0 12 0c.1.1.3.2.4.3a.1.1 0 0 1 0 .2 13 13 0 0 1-1.8.9.1.1 0 0 0-.1.1c.4.7.8 1.4 1.3 2.1a.1.1 0 0 0 .1 0 19.7 19.7 0 0 0 6-3 .1.1 0 0 0 0 0c.3-5-.9-9.5-3.5-13.5zM8.5 15c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2zm7 0c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2z" />
+                    </svg>
+                  </div>
+                </div>
+                <span
+                  style={{
+                    fontSize: "11px",
+                    color: theme === "light" ? "#1c1c1e" : "#f2f2f7",
+                    marginTop: "6px",
+                    textAlign: "center",
+                    lineHeight: "1.2",
+                    maxWidth: "80px",
+                  }}
+                >
+                  Alex Chen
+                </span>
+              </div>
+
+              {/* Contact 3: Marcus Lim (replaced "Chip Dong Lim" with generic avatar) */}
+              <div
+                onClick={onCopy}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  width: "100%",
+                  cursor: "pointer",
+                }}
+              >
+                <div
+                  style={{
+                    width: "64px",
+                    height: "64px",
+                    borderRadius: "50%",
+                    background:
+                      "linear-gradient(135deg, #0284c7 0%, #0d9488 100%)",
+                    display: "grid",
+                    placeItems: "center",
+                    position: "relative",
+                    color: "#ffffff",
+                    boxShadow:
+                      theme === "light"
+                        ? "0 2px 6px rgba(0,0,0,0.12)"
+                        : "0 2px 6px rgba(0,0,0,0.35)",
+                  }}
+                >
+                  {/* Generic Avatar Icon */}
+                  <svg
+                    width="30"
+                    height="30"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#ffffff"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                  {/* LinkedIn Badge */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: "-2px",
+                      right: "-2px",
+                      width: "22px",
+                      height: "22px",
+                      borderRadius: "50%",
+                      background: "#0A66C2",
+                      border:
+                        theme === "light"
+                          ? "2px solid #f2f2f7"
+                          : "2px solid #1c1c1e",
+                      display: "grid",
+                      placeItems: "center",
+                    }}
+                  >
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="#ffffff"
+                    >
+                      <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z" />
+                    </svg>
+                  </div>
+                </div>
+                <span
+                  style={{
+                    fontSize: "11px",
+                    color: theme === "light" ? "#1c1c1e" : "#f2f2f7",
+                    marginTop: "6px",
+                    textAlign: "center",
+                    lineHeight: "1.2",
+                    maxWidth: "80px",
+                  }}
+                >
+                  Marcus Lim
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* 3. Apps Row (AirDrop, Messages, Mail, Notes) */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(4, 1fr)",
+              gap: "8px",
+              justifyItems: "center",
+              paddingBottom: "16px",
+              borderBottom:
+                theme === "light"
+                  ? "1px solid rgba(0,0,0,0.08)"
+                  : "1px solid rgba(255,255,255,0.08)",
+            }}
+          >
+            {/* AirDrop */}
+            <div
+              onClick={onCopy}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                width: "100%",
+                cursor: "pointer",
+              }}
+            >
+              <img
+                src="/assets/share/airdrop.png"
+                alt="AirDrop"
+                style={{
+                  width: "64px",
+                  height: "64px",
+                  objectFit: "contain",
+                  borderRadius: "14px",
+                  filter:
+                    theme === "light"
+                      ? "drop-shadow(0 2px 5px rgba(0,0,0,0.12))"
+                      : "drop-shadow(0 2px 6px rgba(0,0,0,0.35))",
+                }}
+              />
+              <span
+                style={{
+                  fontSize: "11px",
+                  marginTop: "6px",
+                  textAlign: "center",
+                  color: theme === "light" ? "#1c1c1e" : "#f2f2f7",
+                }}
+              >
+                AirDrop
+              </span>
+            </div>
+
+            {/* Messages */}
+            <div
+              onClick={onCopy}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                width: "100%",
+                cursor: "pointer",
+              }}
+            >
+              <img
+                src="/assets/share/messages.png"
+                alt="Messages"
+                style={{
+                  width: "64px",
+                  height: "64px",
+                  objectFit: "contain",
+                  borderRadius: "14px",
+                  filter:
+                    theme === "light"
+                      ? "drop-shadow(0 2px 5px rgba(0,0,0,0.12))"
+                      : "drop-shadow(0 2px 6px rgba(0,0,0,0.35))",
+                }}
+              />
+              <span
+                style={{
+                  fontSize: "11px",
+                  marginTop: "6px",
+                  textAlign: "center",
+                  color: theme === "light" ? "#1c1c1e" : "#f2f2f7",
+                }}
+              >
+                Messages
+              </span>
+            </div>
+
+            {/* Mail */}
+            <div
+              onClick={onCopy}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                width: "100%",
+                cursor: "pointer",
+              }}
+            >
+              <img
+                src="/assets/share/mail.png"
+                alt="Mail"
+                style={{
+                  width: "64px",
+                  height: "64px",
+                  objectFit: "contain",
+                  borderRadius: "14px",
+                  filter:
+                    theme === "light"
+                      ? "drop-shadow(0 2px 5px rgba(0,0,0,0.12))"
+                      : "drop-shadow(0 2px 6px rgba(0,0,0,0.35))",
+                }}
+              />
+              <span
+                style={{
+                  fontSize: "11px",
+                  marginTop: "6px",
+                  textAlign: "center",
+                  color: theme === "light" ? "#1c1c1e" : "#f2f2f7",
+                }}
+              >
+                Mail
+              </span>
+            </div>
+
+            {/* Notes */}
+            <div
+              onClick={onCopy}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                width: "100%",
+                cursor: "pointer",
+              }}
+            >
+              <img
+                src="/assets/share/notes.png"
+                alt="Notes"
+                style={{
+                  width: "64px",
+                  height: "64px",
+                  objectFit: "contain",
+                  borderRadius: "14px",
+                  filter:
+                    theme === "light"
+                      ? "drop-shadow(0 2px 5px rgba(0,0,0,0.12))"
+                      : "drop-shadow(0 2px 6px rgba(0,0,0,0.35))",
+                }}
+              />
+              <span
+                style={{
+                  fontSize: "11px",
+                  marginTop: "6px",
+                  textAlign: "center",
+                  color: theme === "light" ? "#1c1c1e" : "#f2f2f7",
+                }}
+              >
+                Notes
+              </span>
+            </div>
+          </div>
+
+          {/* 4. Actions Row (Copy, Add to New Quick Note, Ask Gemini, View More) */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(4, 1fr)",
+              gap: "8px",
+              justifyItems: "center",
+            }}
+          >
+            {/* Copy */}
+            <div
+              onClick={onCopy}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                width: "100%",
+                cursor: "pointer",
+              }}
+            >
+              <img
+                src="/assets/share/copy.png"
+                alt="Copy"
+                style={{
+                  width: "64px",
+                  height: "64px",
+                  objectFit: "contain",
+                  borderRadius: "50%",
+                  filter:
+                    theme === "light"
+                      ? "drop-shadow(0 2px 4px rgba(0,0,0,0.1))"
+                      : "drop-shadow(0 2px 5px rgba(0,0,0,0.3))",
+                }}
+              />
+              <span
+                style={{
+                  fontSize: "11px",
+                  marginTop: "6px",
+                  textAlign: "center",
+                  color: theme === "light" ? "#1c1c1e" : "#f2f2f7",
+                  lineHeight: "1.2",
+                }}
+              >
+                Copy
+              </span>
+            </div>
+
+            {/* Add to New Quick Note */}
+            <div
+              onClick={onCopy}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                width: "100%",
+                cursor: "pointer",
+              }}
+            >
+              <img
+                src="/assets/share/quick-note.png"
+                alt="Add to New Quick Note"
+                style={{
+                  width: "64px",
+                  height: "64px",
+                  objectFit: "contain",
+                  borderRadius: "50%",
+                  filter:
+                    theme === "light"
+                      ? "drop-shadow(0 2px 4px rgba(0,0,0,0.1))"
+                      : "drop-shadow(0 2px 5px rgba(0,0,0,0.3))",
+                }}
+              />
+              <span
+                style={{
+                  fontSize: "10.5px",
+                  marginTop: "6px",
+                  textAlign: "center",
+                  color: theme === "light" ? "#1c1c1e" : "#f2f2f7",
+                  lineHeight: "1.2",
+                  maxWidth: "74px",
+                }}
+              >
+                Add to New Quick Note
+              </span>
+            </div>
+
+            {/* Ask Gemini */}
+            <div
+              onClick={onCopy}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                width: "100%",
+                cursor: "pointer",
+              }}
+            >
+              <img
+                src="/assets/share/gemini.png"
+                alt="Ask Gemini"
+                style={{
+                  width: "64px",
+                  height: "64px",
+                  objectFit: "contain",
+                  borderRadius: "50%",
+                  filter:
+                    theme === "light"
+                      ? "drop-shadow(0 2px 4px rgba(0,0,0,0.1))"
+                      : "drop-shadow(0 2px 5px rgba(0,0,0,0.3))",
+                }}
+              />
+              <span
+                style={{
+                  fontSize: "11px",
+                  marginTop: "6px",
+                  textAlign: "center",
+                  color: theme === "light" ? "#1c1c1e" : "#f2f2f7",
+                  lineHeight: "1.2",
+                }}
+              >
+                Ask Gemini
+              </span>
+            </div>
+
+            {/* View More */}
+            <div
+              onClick={onCopy}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                width: "100%",
+                cursor: "pointer",
+              }}
+            >
+              <img
+                src="/assets/share/view-more.png"
+                alt="View More"
+                style={{
+                  width: "64px",
+                  height: "64px",
+                  objectFit: "contain",
+                  borderRadius: "50%",
+                  filter:
+                    theme === "light"
+                      ? "drop-shadow(0 2px 4px rgba(0,0,0,0.1))"
+                      : "drop-shadow(0 2px 5px rgba(0,0,0,0.3))",
+                }}
+              />
+              <span
+                style={{
+                  fontSize: "11px",
+                  marginTop: "6px",
+                  textAlign: "center",
+                  color: theme === "light" ? "#1c1c1e" : "#f2f2f7",
+                  lineHeight: "1.2",
+                }}
+              >
+                View More
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
@@ -1587,6 +4480,13 @@ function PlanScreen({
   selectedLegIndex,
   onHighlightLeg,
   onResetHighlight,
+  onToggleDrawer,
+  onDeleteStop,
+  onUndoStop,
+  onRevisit,
+  onReplaceStop,
+  onBounce,
+  onSearch,
 }: {
   stops: TimelineStop[]
   theme: Theme
@@ -1598,18 +4498,99 @@ function PlanScreen({
   selectedLegIndex?: number | null
   onHighlightLeg?: (index: number) => void
   onResetHighlight?: () => void
+  onToggleDrawer?: (down: boolean) => void
+  onDeleteStop?: (id: string) => void
+  onUndoStop?: (id: string) => void
+  onRevisit?: (afterId: string, customStop?: TimelineStop) => void
+  onReplaceStop?: (replaceId: string, customStop?: TimelineStop) => void
+  onBounce?: (stop: TimelineStop) => void
+  onSearch?: (stop: TimelineStop) => void
 }) {
   const currentRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const actionsRef = useRef<Record<string, HTMLDivElement | null>>({})
+  const [expandedAddStopId, setExpandedAddStopId] = useState<string | null>(
+    null,
+  )
   const [mapExpanded, setMapExpanded] = useState(
     new URLSearchParams(window.location.search).get("expanded") === "1",
   )
-  const [activeLeg, setActiveLeg] = useState<number | null>(selectedLegIndex ?? null)
+  const [activeLeg, setActiveLeg] = useState<number | null>(
+    selectedLegIndex ?? null,
+  )
+  const [swipedStopId, setSwipedStopId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (expandedAddStopId) {
+      const timer = setTimeout(() => {
+        const el = actionsRef.current[expandedAddStopId]
+        const container = scrollContainerRef.current
+        if (el && container) {
+          const containerRect = container.getBoundingClientRect()
+          const elRect = el.getBoundingClientRect()
+          const targetBottom = Math.max(elRect.bottom, elRect.top + 58)
+          const bottomPadding = 32
+          const delta = targetBottom - (containerRect.bottom - bottomPadding)
+          if (delta > -20) {
+            container.scrollBy({
+              top: Math.max(delta, 0) + 16,
+              behavior: "smooth",
+            })
+          }
+        }
+      }, 150)
+      return () => clearTimeout(timer)
+    }
+  }, [expandedAddStopId])
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [revisitModalStop, setRevisitModalStop] = useState<TimelineStop | null>(
+    () => {
+      const isRevisit =
+        new URLSearchParams(window.location.search).get("revisit") === "1"
+      const reqScreen = new URLSearchParams(window.location.search).get(
+        "screen",
+      )
+      if (isRevisit && (reqScreen === "plan" || !reqScreen)) {
+        return stops.find((s) => s.past) || stops[0]
+      }
+      return null
+    },
+  )
+  const [drawerMode, setDrawerMode] = useState<"invite" | "share" | null>(
+    () => {
+      const p = new URLSearchParams(window.location.search)
+      if (p.get("invite") === "1") return "invite"
+      if (p.get("share") === "1") return "share"
+      return null
+    },
+  )
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
+
+  const handleCopyLink = () => {
+    try {
+      navigator.clipboard?.writeText(
+        "https://maps.app.goo.gl/SingaporeFoodTrail",
+      )
+    } catch {}
+    const isShare = drawerMode === "share"
+    setDrawerMode(null)
+    setToastMessage(
+      isShare ? "Link copied to clipboard" : "Invite link copied to clipboard",
+    )
+    setTimeout(() => {
+      setToastMessage(null)
+    }, 3000)
+  }
 
   // Drawer Drag & Tap State
   const [dragOffsetY, setDragOffsetY] = useState(0)
   const isDragging = useRef(false)
   const dragStartY = useRef(0)
   const totalDragDistance = useRef(0)
+
+  useEffect(() => {
+    onToggleDrawer?.(mapExpanded)
+  }, [mapExpanded, onToggleDrawer])
 
   useEffect(() => {
     if (selectedLegIndex !== undefined) {
@@ -1640,7 +4621,45 @@ function PlanScreen({
   }
 
   const currentStop = stops.find((stop) => stop.current) ?? stops[0]
-  const displayStop = activeLeg !== null && stops[activeLeg + 1] ? stops[activeLeg + 1] : currentStop
+  const currentIndex = stops.findIndex((stop) => stop.id === currentStop.id)
+
+  const legIndex =
+    activeLeg !== null
+      ? activeLeg
+      : currentIndex >= 0 && currentIndex < stops.length - 1
+        ? currentIndex
+        : 0
+
+  const fromStop = stops[legIndex] || currentStop
+  const nextStop = stops[legIndex + 1] || stops[stops.length - 1]
+  const legRoute = getRouteDetail(fromStop, nextStop, legIndex)
+
+  const badge =
+    legRoute.lineClass === "downtown"
+      ? "DTL"
+      : legRoute.lineClass === "thomson"
+        ? "TEL"
+        : legRoute.icon === "bus"
+          ? legRoute.title.replace("Bus ", "")
+          : null
+
+  let duration = "4 min"
+  let sub = "Walk"
+  if (legRoute.detail) {
+    if (legRoute.detail.includes("·")) {
+      const parts = legRoute.detail.split("·").map((s) => s.trim())
+      if (parts[1].includes("min") || parts[1].includes("hr")) {
+        duration = parts[1]
+        sub = parts[0]
+      } else {
+        duration = parts[0]
+        sub = parts[1]
+      }
+    } else {
+      duration = legRoute.detail
+      sub = legRoute.title
+    }
+  }
 
   // Interactive Drag & Tap Handler
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -1648,7 +4667,7 @@ function PlanScreen({
     dragStartY.current = e.clientY
     totalDragDistance.current = 0
     try {
-      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+      ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
     } catch {}
   }
 
@@ -1672,7 +4691,7 @@ function PlanScreen({
     if (!isDragging.current) return
     isDragging.current = false
     try {
-      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
+      ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
     } catch {}
 
     const dist = totalDragDistance.current
@@ -1708,31 +4727,40 @@ function PlanScreen({
   return (
     <div className="screen-page plan-page">
       {/* 1. Top Left Back Button (Cleanly isolated, zero overlap) */}
-      <div style={{ position: 'absolute', top: '52px', left: '14px', zIndex: 30, pointerEvents: 'auto' }}>
-        <BackButton onPress={onBack} theme={theme} />
-      </div>
+      <BackButton onPress={onBack} theme={theme} />
 
       {/* 2. Floating Action Buttons: Light/Dark Toggle and Compass directly above drawer on right side at all times */}
       <div
         className="plan-fab-cluster"
         style={{
-          bottom: mapExpanded ? '165px' : 'calc(100% - 170px)',
-          transform: dragOffsetY !== 0 ? `translate3d(0, ${dragOffsetY}px, 0)` : undefined,
-          transition: isDragging.current ? 'none' : 'bottom 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.2s ease',
+          bottom: mapExpanded ? "165px" : "calc(100% - 345px)",
+          transform:
+            dragOffsetY !== 0
+              ? `translate3d(0, ${dragOffsetY}px, 0)`
+              : undefined,
+          transition: isDragging.current
+            ? "none"
+            : "bottom 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.2s ease",
         }}
       >
         {/* Vertical Pill matching Main Screen */}
         <div
           style={{
-            background: theme === 'dark' ? 'var(--control)' : '#ffffff',
-            borderRadius: '24px',
-            padding: '3px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '4px',
-            boxShadow: theme === 'dark' ? '0 4px 14px rgba(0,0,0,0.35)' : '0 4px 14px rgba(0,0,0,0.12)',
-            border: theme === 'dark' ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)',
+            background: theme === "dark" ? "var(--control)" : "#ffffff",
+            borderRadius: "24px",
+            padding: "3px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "4px",
+            boxShadow:
+              theme === "dark"
+                ? "0 4px 14px rgba(0,0,0,0.35)"
+                : "0 4px 14px rgba(0,0,0,0.12)",
+            border:
+              theme === "dark"
+                ? "1px solid rgba(255,255,255,0.08)"
+                : "1px solid rgba(0,0,0,0.08)",
           }}
         >
           {/* Compass / Recenter */}
@@ -1740,12 +4768,12 @@ function PlanScreen({
             onClick={() => onCurrent?.()}
             className="tap"
             style={{
-              width: '40px',
-              height: '38px',
-              display: 'grid',
-              placeItems: 'center',
-              color: theme === 'dark' ? 'var(--text-high)' : '#202124',
-              cursor: 'pointer',
+              width: "40px",
+              height: "38px",
+              display: "grid",
+              placeItems: "center",
+              color: theme === "dark" ? "var(--text-high)" : "#202124",
+              cursor: "pointer",
             }}
             title="Compass heading"
           >
@@ -1757,41 +4785,48 @@ function PlanScreen({
             onClick={onToggleTheme}
             className="tap"
             style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              background: theme === 'dark' ? '#ffffff' : '#202124',
-              color: theme === 'dark' ? '#202124' : '#ffffff',
-              display: 'grid',
-              placeItems: 'center',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
-              cursor: 'pointer',
+              width: "40px",
+              height: "40px",
+              borderRadius: "50%",
+              background: theme === "dark" ? "#ffffff" : "#202124",
+              color: theme === "dark" ? "#202124" : "#ffffff",
+              display: "grid",
+              placeItems: "center",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
+              cursor: "pointer",
             }}
-            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
           >
-            <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={20} />
+            <Icon name={theme === "dark" ? "sun" : "moon"} size={20} />
           </div>
         </div>
       </div>
 
       {/* 3. Interactive Drawer (Supports touch/mouse drag up & down and tap) */}
-      <div 
+      <div
         className={`plan-sheet ${mapExpanded ? "map-expanded" : ""}`}
         style={{
-          transform: dragOffsetY !== 0 ? `translate3d(0, ${dragOffsetY}px, 0)` : undefined,
-          transition: isDragging.current ? 'none' : 'top 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.2s ease',
+          transform:
+            dragOffsetY !== 0
+              ? `translate3d(0, ${dragOffsetY}px, 0)`
+              : undefined,
+          transition: isDragging.current
+            ? "none"
+            : "top 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.2s ease",
         }}
       >
         <div
           className="sheet-grabber"
           role="button"
           tabIndex={0}
-          aria-label={mapExpanded ? "Slide up for full plan" : "Slide down to expand map"}
+          aria-label={
+            mapExpanded ? "Slide up for full plan" : "Slide down to expand map"
+          }
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerCancel}
-          style={{ touchAction: 'none', cursor: 'ns-resize' }}
+          style={{ touchAction: "none", cursor: "ns-resize" }}
         >
           <span />
           <small>
@@ -1801,23 +4836,34 @@ function PlanScreen({
           </small>
         </div>
         {mapExpanded ? (
-          <div className="expanded-current">
-            <span className="time">{displayStop.time}</span>
-            <Tap
-              label={`Open ${displayStop.title}`}
-              className="time-pill current-mini"
-              onPress={() => onPlace(displayStop)}
-            >
-              <span>
-                <small>{displayStop.current ? "CURRENT LOCATION" : "SELECTED STOP"}</small>
-                <b>{displayStop.title}</b>
-                <em>{displayStop.meta}</em>
-              </span>
-              <Icon name="chevron" />
-            </Tap>
+          <div className="expanded-current-wrapper">
+            <CollapsedDrawerRoute
+              fromTitle={fromStop.title}
+              fromMeta={fromStop.meta}
+              fromKicker={
+                fromStop.current ? "CURRENT LOCATION" : fromStop.time || "START"
+              }
+              isCurrent={Boolean(fromStop.current)}
+              onFromPress={() => onPlace(fromStop)}
+              toTitle={nextStop.title}
+              toMeta={nextStop.meta}
+              toKicker={
+                nextStop.changed ? "NEW ADDITION" : nextStop.time || "NEXT STOP"
+              }
+              isNew={Boolean(nextStop.changed || nextStop.bounceSource)}
+              onToPress={() => onPlace(nextStop)}
+              routeIcon={legRoute.icon}
+              routeDuration={duration}
+              routeSub={sub}
+              routeBadge={badge}
+              routeBadgeClass={
+                legRoute.lineClass ??
+                (legRoute.icon === "bus" ? "bus" : undefined)
+              }
+            />
           </div>
         ) : (
-          <div className="plan-sheet-scroll">
+          <div className="plan-sheet-scroll" ref={scrollContainerRef}>
             <PlanHeader updated={Boolean(updateMessage)} />
             {updateMessage && (
               <div className="updated-banner">
@@ -1837,81 +4883,119 @@ function PlanScreen({
                 <Icon name="clock" size={18} />
                 Current time
               </Tap>
-              <RoundAction icon="share" label="Share plan" />
-              <RoundAction icon="more" label="More options" />
+              <Tap
+                label="Invite collaborators"
+                className="invite-button"
+                onPress={() => setDrawerMode("invite")}
+              >
+                <Icon name="user-plus" size={17} />
+                Invite
+              </Tap>
+              <RoundAction
+                icon="share"
+                label="Share plan"
+                onPress={() => setDrawerMode("share")}
+              />
+              <RoundAction
+                icon="more"
+                label="More options"
+                onPress={() => setMenuOpen(true)}
+              />
             </div>
             <div className="day-heading">
               <span>Day 1</span>
               <small>Shenton Way Coffee & Suntec Views</small>
             </div>
             <div className="timeline">
-              {stops.map((stop, index) => (
-                <div className="timeline-stop-group" key={stop.id}>
-                  <div
-                    className={`timeline-row ${stop.current ? "current" : ""} ${
-                      stop.past ? "past" : ""
-                    } ${stop.changed ? "changed" : ""}`}
-                    ref={stop.current ? currentRef : undefined}
-                  >
-                    <span className="time">{stop.time}</span>
-                    <i className="timeline-dot" />
-                    <Tap
-                      label={`Open ${stop.title}`}
-                      className="time-pill"
-                      onPress={() => onPlace(stop)}
-                    >
-                      <span>
-                        <b>{stop.title}</b>
-                        <small>{stop.meta}</small>
-                      </span>
-                      <Icon name="chevron" />
-                    </Tap>
-                  </div>
-                  {index < stops.length - 1 &&
-                    (() => {
-                      const route = getRouteDetail(
-                        stop,
-                        stops[index + 1],
-                        index,
-                      )
-                      const badge =
-                        route.lineClass === "downtown"
-                          ? "DTL"
-                          : route.lineClass === "thomson"
-                            ? "TEL"
-                            : route.icon === "bus"
-                              ? route.title.replace("Bus ", "")
-                              : null
-                      const isSelected = activeLeg === index
-                      return (
-                        <div 
-                          className={`route-detail ${isSelected ? "selected-route" : ""}`}
-                          onClick={() => handleRouteClick(index)}
-                          role="button"
-                          tabIndex={0}
-                          aria-label={`Highlight route from ${stop.title} to ${stops[index + 1].title}`}
-                        >
-                          <span
-                            className={`route-icon ${route.lineClass ?? ""}`}
+              {stops.map((stop, index) => {
+                const isRemovable = true
+                return (
+                  <div className="timeline-stop-group" key={stop.id}>
+                    <SwipeableTimelineRow
+                      stop={stop}
+                      currentRef={stop.current ? currentRef : undefined}
+                      isRemovable={isRemovable}
+                      isOpen={swipedStopId === stop.id}
+                      onOpen={() => setSwipedStopId(stop.id)}
+                      onClose={() => {
+                        if (swipedStopId === stop.id) setSwipedStopId(null)
+                      }}
+                      onDelete={() => onDeleteStop?.(stop.id)}
+                      onUndo={() => {
+                        setSwipedStopId(null)
+                        onUndoStop?.(stop.id)
+                      }}
+                      onPlace={() => onPlace(stop)}
+                      isAddExpanded={expandedAddStopId === stop.id}
+                      onToggleAdd={() => {
+                        setExpandedAddStopId((prev) =>
+                          prev === stop.id ? null : stop.id,
+                        )
+                      }}
+                      actionsRef={(el) => {
+                        actionsRef.current[stop.id] = el
+                      }}
+                      onBounce={() => {
+                        if (onBounce) {
+                          onBounce(stop)
+                        } else {
+                          onPlace(stop)
+                        }
+                      }}
+                      onSearch={() => {
+                        if (onSearch) {
+                          onSearch(stop)
+                        }
+                      }}
+                    />
+                    {index < stops.length - 1 &&
+                      (() => {
+                        const route = getRouteDetail(
+                          stop,
+                          stops[index + 1],
+                          index,
+                        )
+                        const badge =
+                          route.lineClass === "downtown"
+                            ? "DTL"
+                            : route.lineClass === "thomson"
+                              ? "TEL"
+                              : route.icon === "bus"
+                                ? route.title.replace("Bus ", "")
+                                : null
+                        const isSelected = activeLeg === index
+                        return (
+                          <div
+                            className={`route-detail ${
+                              isSelected ? "selected-route" : ""
+                            }`}
+                            onClick={() => handleRouteClick(index)}
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`Highlight route from ${stop.title} to ${stops[index + 1].title}`}
                           >
-                            <Icon name={route.icon} size={17} />
-                          </span>
-                          <span>
-                            <b>{route.title}</b>
-                            <small>{route.detail}</small>
-                          </span>
-                          {badge && (
                             <span
-                              className={`transit-badge ${route.lineClass ?? "bus"}`}
+                              className={`route-icon ${route.lineClass ?? ""}`}
                             >
-                              {badge}
+                              <Icon name={route.icon} size={17} />
                             </span>
-                          )}
-                        </div>
-                      )
-                    })()}
-                </div>
-              ))}
+                            <span>
+                              <b>{route.title}</b>
+                              <small>{route.detail}</small>
+                            </span>
+                            {badge && (
+                              <span
+                                className={`transit-badge ${route.lineClass ?? "bus"}`}
+                              >
+                                {badge}
+                              </span>
+                            )}
+                          </div>
+                        )
+                      })()}
+                  </div>
+                )
+              })}
             </div>
             <div className="day-heading">
               <span>Day 2</span>
@@ -1921,6 +5005,349 @@ function PlanScreen({
           </div>
         )}
       </div>
+
+      {/* 3. Three Dots Options Menu */}
+      <ListOptionsMenu
+        isOpen={menuOpen}
+        theme={theme}
+        onClose={() => setMenuOpen(false)}
+        onInvite={() => {
+          setMenuOpen(false)
+          setDrawerMode("invite")
+        }}
+        onShare={() => {
+          setMenuOpen(false)
+          setDrawerMode("share")
+        }}
+        onToast={(msg) => {
+          setMenuOpen(false)
+          setToastMessage(msg)
+          setTimeout(() => setToastMessage(null), 3000)
+        }}
+      />
+
+      {/* 4. Invite / Share Drawer (iOS Share Sheet) */}
+      <InviteDrawer
+        isOpen={drawerMode !== null}
+        theme={theme}
+        title={drawerMode === "share" ? "Share to view" : "Invite to edit"}
+        onClose={() => setDrawerMode(null)}
+        onCopy={handleCopyLink}
+      />
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="toast" style={{ zIndex: 160, pointerEvents: "auto" }}>
+          <span className="toast-icon">
+            <Icon name="check" size={18} />
+          </span>
+          <span>
+            <b>Success</b>
+            <small>{toastMessage}</small>
+          </span>
+        </div>
+      )}
+
+      {/* 5. Revisit Sheet (if opened on PlanScreen) */}
+      {revisitModalStop && (
+        <RevisitSheet
+          stop={revisitModalStop}
+          fullItinerary={stops}
+          onAddAfter={(afterId) => {
+            setRevisitModalStop(null)
+            onRevisit?.(afterId, revisitModalStop)
+          }}
+          onReplace={(replaceId) => {
+            setRevisitModalStop(null)
+            onReplaceStop?.(replaceId, revisitModalStop)
+          }}
+          onClose={() => setRevisitModalStop(null)}
+        />
+      )}
+    </div>
+  )
+}
+
+function RevisitSheet({
+  stop,
+  fullItinerary,
+  onAddAfter,
+  onReplace,
+  onClose,
+}: {
+  stop: TimelineStop
+  fullItinerary: TimelineStop[]
+  onAddAfter: (afterId: string) => void
+  onReplace: (replaceId: string) => void
+  onClose: () => void
+}) {
+  // Option 1: Recommendation of where to add after
+  const recommendedStop =
+    fullItinerary.find((s) => s.current) ||
+    fullItinerary.find((s) => !s.past && s.id !== stop.id) ||
+    fullItinerary[0]
+
+  // Option 2: Suggest replacing something on the itinerary to fit the schedule
+  const replaceTargetStop =
+    fullItinerary.find((s) => !s.past && !s.current && s.id !== stop.id) ||
+    fullItinerary.find((s) => !s.past && s.id !== stop.id) ||
+    fullItinerary[fullItinerary.length - 1]
+
+  // Option 3: Dropdown list of all places on full itinerary
+  const [selectedDropdownId, setSelectedDropdownId] = useState<string>(
+    recommendedStop ? recommendedStop.id : fullItinerary[0]?.id || "",
+  )
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const selectedStopItem =
+    fullItinerary.find((s) => s.id === selectedDropdownId) || fullItinerary[0]
+
+  return (
+    <div className="revisit-overlay">
+      <Tap
+        label="Close revisit options"
+        className="revisit-backdrop"
+        onPress={onClose}
+      />
+      <div
+        className="revisit-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Revisit ${stop.title}`}
+      >
+        <div className="sheet-grip" />
+        <div className="revisit-kicker">REVISIT {stop.title.toUpperCase()}</div>
+        <div className="revisit-title">Add back to your itinerary</div>
+        <p className="revisit-desc">
+          Choose where or how {stop.title} fits into your Singapore plan:
+        </p>
+
+        <div className="revisit-options-container">
+          {/* OPTION 1: Recommendation of where to add after */}
+          {recommendedStop && (
+            <div
+              className="revisit-option-card option-recommendation"
+              onClick={() => onAddAfter(recommendedStop.id)}
+              role="button"
+              tabIndex={0}
+              aria-label={`Recommended: Add after ${recommendedStop.title}`}
+            >
+              <div className="revisit-card-top">
+                <span className="revisit-badge badge-recommended">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="12"
+                    height="12"
+                    fill="currentColor"
+                    style={{ marginRight: 4 }}
+                  >
+                    <path d="M12 2l2.4 7.4h7.6l-6.1 4.5 2.3 7.1-6.2-4.5-6.2 4.5 2.3-7.1-6.1-4.5h7.6z" />
+                  </svg>
+                  RECOMMENDED
+                </span>
+                <span className="revisit-timing">
+                  AFTER · {recommendedStop.time}
+                </span>
+              </div>
+              <div className="revisit-card-body">
+                <div className="revisit-card-text">
+                  <b className="revisit-card-title">
+                    Add after {recommendedStop.title}
+                  </b>
+                  <small className="revisit-card-meta">
+                    Optimal route timing · Adds ~45 min near Chinatown without
+                    extra transit
+                  </small>
+                </div>
+                <div className="revisit-action-icon add">
+                  <Icon name="plus" size={18} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* OPTION 2: Suggest replacing something on the itinerary to fit schedule */}
+          {replaceTargetStop && (
+            <div
+              className="revisit-option-card option-replace"
+              onClick={() => onReplace(replaceTargetStop.id)}
+              role="button"
+              tabIndex={0}
+              aria-label={`Replace ${replaceTargetStop.title} to fit schedule`}
+            >
+              <div className="revisit-card-top">
+                <span className="revisit-badge badge-replace">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="12"
+                    height="12"
+                    fill="currentColor"
+                    style={{ marginRight: 4 }}
+                  >
+                    <path d="M16 3h5v5M4 20l5-5M21 3l-7 7M15 15l6 6M21 16v5h-5M4 4l5 5" />
+                  </svg>
+                  FIT SCHEDULE · SWAP
+                </span>
+                <span className="revisit-timing">
+                  SWAP · {replaceTargetStop.time}
+                </span>
+              </div>
+              <div className="revisit-card-body">
+                <div className="revisit-card-text">
+                  <b className="revisit-card-title">
+                    Replace {replaceTargetStop.title}
+                  </b>
+                  <small className="revisit-card-meta">
+                    Swaps {replaceTargetStop.time} slot · Keeps your 7:30 pm
+                    dinner finish on time
+                  </small>
+                </div>
+                <div className="revisit-action-icon swap">
+                  <Icon name="shuffle" size={18} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* OPTION 3: Select from a dropdown list of all places on full itinerary */}
+          <div className="revisit-option-card option-dropdown">
+            <div className="revisit-card-top">
+              <span className="revisit-badge badge-custom">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="12"
+                  height="12"
+                  fill="currentColor"
+                  style={{ marginRight: 4 }}
+                >
+                  <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" />
+                </svg>
+                FULL ITINERARY LIST
+              </span>
+              <span className="revisit-timing">
+                {fullItinerary.length} PLACES
+              </span>
+            </div>
+            <div className="revisit-card-text" style={{ marginBottom: 8 }}>
+              <b className="revisit-card-title">Choose from full itinerary</b>
+              <small className="revisit-card-meta">
+                Select any place in your schedule to insert {stop.title} after:
+              </small>
+            </div>
+            <div className="revisit-dropdown-control-row">
+              <div className="revisit-select-container">
+                {isDropdownOpen && (
+                  <div
+                    className="revisit-dropup-backdrop"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setIsDropdownOpen(false)
+                    }}
+                  />
+                )}
+
+                {isDropdownOpen && (
+                  <div
+                    className="revisit-dropup-menu"
+                    role="listbox"
+                    aria-label="Full itinerary places"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="revisit-dropup-list">
+                      {fullItinerary.map((item) => {
+                        const isSelected = item.id === selectedDropdownId
+                        const tag = item.current
+                          ? " · Current"
+                          : item.past
+                            ? " · Visited"
+                            : ""
+                        return (
+                          <div
+                            key={item.id}
+                            className={`revisit-dropup-item ${
+                              isSelected ? "selected" : ""
+                            }`}
+                            role="option"
+                            aria-selected={isSelected}
+                            tabIndex={0}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedDropdownId(item.id)
+                              setIsDropdownOpen(false)
+                            }}
+                          >
+                            <span className="revisit-dropup-item-text">
+                              After {item.title} ({item.time}
+                              {tag})
+                            </span>
+                            {isSelected && (
+                              <svg
+                                className="revisit-dropup-check"
+                                viewBox="0 0 24 24"
+                                width="14"
+                                height="14"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  className={`revisit-dropdown-trigger ${
+                    isDropdownOpen ? "open" : ""
+                  }`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setIsDropdownOpen(!isDropdownOpen)
+                  }}
+                  aria-haspopup="listbox"
+                  aria-expanded={isDropdownOpen}
+                >
+                  <span className="revisit-dropdown-trigger-label">
+                    After {selectedStopItem?.title} ({selectedStopItem?.time}
+                    {selectedStopItem?.current
+                      ? " · Current"
+                      : selectedStopItem?.past
+                        ? " · Visited"
+                        : ""}
+                    )
+                  </span>
+                  <div
+                    className={`revisit-select-arrow ${
+                      isDropdownOpen ? "open" : ""
+                    }`}
+                    aria-hidden="true"
+                  >
+                    <Icon name="chevron" size={14} />
+                  </div>
+                </button>
+              </div>
+              <button
+                type="button"
+                className="revisit-dropdown-confirm-btn"
+                onClick={() => {
+                  setIsDropdownOpen(false)
+                  onAddAfter(selectedDropdownId)
+                }}
+                aria-label="Confirm insertion after selected place"
+              >
+                <Icon name="plus" size={14} />
+                <span>Insert</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
@@ -1929,16 +5356,20 @@ function PlaceScreen({
   stop,
   nextStop,
   placementOptions,
+  fullItinerary = [],
   onBounce,
   onRevisit,
+  onReplaceStop,
   onRevert,
   onBack,
 }: {
   stop: TimelineStop
   nextStop?: TimelineStop
   placementOptions: TimelineStop[]
+  fullItinerary?: TimelineStop[]
   onBounce: () => void
   onRevisit: (afterId: string) => void
+  onReplaceStop?: (replaceId: string) => void
   onRevert: () => void
   onBack: () => void
 }) {
@@ -1952,12 +5383,6 @@ function PlaceScreen({
       <div className="place-hero">
         <img src={`/assets/prototype/screen-${heroImage}.jpg`} alt="" />
         <BackButton onPress={onBack} label="Back to saved plan" />
-        {stop.title === "KŌBASHI" && (
-          <div className="place-hero-caption">
-            Begin morning two at KŌBASHĪ on South Bridge Road for incredible
-            artisan sourdough treats and morning pastries.
-          </div>
-        )}
       </div>
       <div className="place-content">
         <div className={`current-label ${stop.past ? "visited" : ""}`}>
@@ -2036,41 +5461,21 @@ function PlaceScreen({
         </p>
       </div>
       {showRevisit && (
-        <div className="revisit-overlay">
-          <Tap
-            label="Close revisit options"
-            className="revisit-backdrop"
-            onPress={() => setShowRevisit(false)}
-          />
-          <div className="revisit-sheet">
-            <div className="sheet-grip" />
-            <div className="revisit-kicker">
-              REVISIT {stop.title.toUpperCase()}
-            </div>
-            <div className="revisit-title">Insert after which stop?</div>
-            <p>
-              Choose where this location should be added back into your
-              itinerary.
-            </p>
-            <div className="placement-list">
-              {placementOptions.slice(0, 3).map((option) => (
-                <Tap
-                  key={option.id}
-                  label={`Insert ${stop.title} after ${option.title}`}
-                  className="placement-pill"
-                  onPress={() => onRevisit(option.id)}
-                >
-                  <span>
-                    <small>AFTER · {option.time}</small>
-                    <b>{option.title}</b>
-                    <em>{option.meta}</em>
-                  </span>
-                  <Icon name="plus" />
-                </Tap>
-              ))}
-            </div>
-          </div>
-        </div>
+        <RevisitSheet
+          stop={stop}
+          fullItinerary={
+            fullItinerary.length > 0 ? fullItinerary : placementOptions
+          }
+          onAddAfter={(afterId) => {
+            setShowRevisit(false)
+            onRevisit(afterId)
+          }}
+          onReplace={(replaceId) => {
+            setShowRevisit(false)
+            onReplaceStop ? onReplaceStop(replaceId) : onRevisit(replaceId)
+          }}
+          onClose={() => setShowRevisit(false)}
+        />
       )}
     </div>
   )
@@ -2188,6 +5593,7 @@ function BounceScreen({
   onClose,
   selectedOption,
   onSelectOption,
+  onToggleDrawer,
 }: {
   sourceStop: TimelineStop
   theme: Theme
@@ -2197,39 +5603,132 @@ function BounceScreen({
   onClose: () => void
   selectedOption: number
   onSelectOption: (index: number) => void
+  onToggleDrawer?: (drawerDown: boolean) => void
 }) {
   const options = getBounceOptions(sourceStop)
   const insertsAfterCurrent = sourceStop.id === "kobashi"
   const confirmSelection = () =>
     selectedOption === 0 ? onClose() : onSelect(options[selectedOption].title)
+
+  const [drawerDown, setDrawerDown] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    return (
+      params.get("collapsed") === "1" ||
+      params.get("expanded") === "1" ||
+      params.get("dropup") === "1"
+    )
+  })
+  const [isDropUpOpen, setIsDropUpOpen] = useState(() => {
+    return new URLSearchParams(window.location.search).get("dropup") === "1"
+  })
+  const [dragOffsetY, setDragOffsetY] = useState(0)
+  const isDragging = useRef(false)
+  const dragStartY = useRef(0)
+  const totalDragDistance = useRef(0)
+
+  const handleToggleDrawer = (down: boolean) => {
+    setDrawerDown(down)
+    if (!down) {
+      setIsDropUpOpen(false)
+    }
+    onToggleDrawer?.(down)
+  }
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    setIsDropUpOpen(false)
+    isDragging.current = true
+    dragStartY.current = e.clientY
+    totalDragDistance.current = 0
+    try {
+      ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+    } catch {}
+  }
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging.current) return
+    const diff = e.clientY - dragStartY.current
+    totalDragDistance.current = diff
+
+    if (!drawerDown) {
+      // Drawer is up. Pulling down has diff > 0.
+      const clamped = diff < 0 ? diff * 0.15 : diff
+      setDragOffsetY(clamped)
+    } else {
+      // Drawer is down. Pulling up has diff < 0.
+      const clamped = diff > 0 ? diff * 0.15 : diff
+      setDragOffsetY(clamped)
+    }
+  }
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!isDragging.current) return
+    isDragging.current = false
+    try {
+      ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
+    } catch {}
+
+    const dist = totalDragDistance.current
+    setDragOffsetY(0)
+
+    // Tap (< 8px movement)
+    if (Math.abs(dist) < 8) {
+      handleToggleDrawer(!drawerDown)
+      return
+    }
+
+    // Drag:
+    if (!drawerDown) {
+      if (dist > 35) {
+        handleToggleDrawer(true)
+      }
+    } else {
+      if (dist < -35) {
+        handleToggleDrawer(false)
+      }
+    }
+  }
+
+  const handlePointerCancel = () => {
+    isDragging.current = false
+    setDragOffsetY(0)
+  }
+
   return (
     <div className="screen-page bounce-page">
       {/* 1. Top Left Back Button (Cleanly isolated, zero overlap) */}
-      <div style={{ position: 'absolute', top: '52px', left: '14px', zIndex: 30, pointerEvents: 'auto' }}>
-        <BackButton onPress={onClose} theme={theme} label="Back to place details" />
-      </div>
+      <BackButton
+        onPress={onClose}
+        theme={theme}
+        label="Back to place details"
+      />
 
       {/* 2. Floating Action Controls: Theme toggle and compass on right side */}
       <div
         style={{
-          position: 'absolute',
-          top: '52px',
-          right: '14px',
+          position: "absolute",
+          top: "52px",
+          right: "14px",
           zIndex: 30,
-          pointerEvents: 'auto',
+          pointerEvents: "auto",
         }}
       >
         <div
           style={{
-            background: theme === 'dark' ? 'var(--control)' : '#ffffff',
-            borderRadius: '24px',
-            padding: '3px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '4px',
-            boxShadow: theme === 'dark' ? '0 4px 14px rgba(0,0,0,0.35)' : '0 4px 14px rgba(0,0,0,0.12)',
-            border: theme === 'dark' ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)',
+            background: theme === "dark" ? "var(--control)" : "#ffffff",
+            borderRadius: "24px",
+            padding: "3px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "4px",
+            boxShadow:
+              theme === "dark"
+                ? "0 4px 14px rgba(0,0,0,0.35)"
+                : "0 4px 14px rgba(0,0,0,0.12)",
+            border:
+              theme === "dark"
+                ? "1px solid rgba(255,255,255,0.08)"
+                : "1px solid rgba(0,0,0,0.08)",
           }}
         >
           {/* Compass / Recenter */}
@@ -2237,12 +5736,12 @@ function BounceScreen({
             onClick={() => onRecenter?.()}
             className="tap"
             style={{
-              width: '40px',
-              height: '38px',
-              display: 'grid',
-              placeItems: 'center',
-              color: theme === 'dark' ? 'var(--text-high)' : '#202124',
-              cursor: 'pointer',
+              width: "40px",
+              height: "38px",
+              display: "grid",
+              placeItems: "center",
+              color: theme === "dark" ? "var(--text-high)" : "#202124",
+              cursor: "pointer",
             }}
             title="Compass heading"
           >
@@ -2254,110 +5753,695 @@ function BounceScreen({
             onClick={onToggleTheme}
             className="tap"
             style={{
-              width: '40px',
-              height: '38px',
-              display: 'grid',
-              placeItems: 'center',
-              color: theme === 'dark' ? 'var(--text-high)' : '#202124',
-              cursor: 'pointer',
+              width: "40px",
+              height: "38px",
+              display: "grid",
+              placeItems: "center",
+              color: theme === "dark" ? "var(--text-high)" : "#202124",
+              cursor: "pointer",
             }}
             title="Toggle theme"
           >
-            <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={20} />
+            <Icon name={theme === "dark" ? "sun" : "moon"} size={20} />
           </div>
         </div>
       </div>
 
-      <div className="bounce-sheet" style={{ pointerEvents: 'auto' }}>
-        <div className="bounce-grabber">
+      <div
+        className={`bounce-sheet ${drawerDown ? "drawer-down" : ""}`}
+        style={{
+          transform:
+            dragOffsetY !== 0
+              ? `translate3d(0, ${dragOffsetY}px, 0)`
+              : undefined,
+          transition: isDragging.current
+            ? "none"
+            : "top 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.2s ease",
+          pointerEvents: "auto",
+        }}
+      >
+        <div
+          className="bounce-grabber"
+          role="button"
+          tabIndex={0}
+          aria-label={
+            drawerDown ? "Slide up for all options" : "Slide down to expand map"
+          }
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerCancel}
+          style={{ touchAction: "none", cursor: "ns-resize" }}
+        >
           <span />
+          <small>
+            {drawerDown
+              ? "Slide up for all options"
+              : "Slide down to expand map"}
+          </small>
         </div>
-        <div className="bounce-scroll">
-          <div className="bounce-intro">
-            <AskMark />
-            <div>
-              <span>
-                {sourceStop.time} • {sourceStop.title}
-              </span>
-              <div>What should we do next?</div>
-              <p>
-                {insertsAfterCurrent
-                  ? "Choose an additional stop to add after KŌBASHI."
-                  : `Choose an option to replace ${sourceStop.title}.`}
-              </p>
+
+        {drawerDown ? (
+          <div className="bounce-collapsed-content">
+            {(() => {
+              const option = options[selectedOption] || options[0]
+              const route = getBounceRoute(option, selectedOption, sourceStop)
+              const otherOptions = options
+                .map((opt, idx) => ({
+                  index: idx,
+                  title: opt.title,
+                  meta: opt.meta,
+                  type: opt.type,
+                  route: getBounceRoute(opt, idx, sourceStop),
+                }))
+                .filter((opt) => opt.index !== selectedOption)
+
+              return (
+                <CollapsedDrawerRoute
+                  fromTitle={sourceStop.title}
+                  fromMeta={sourceStop.meta}
+                  fromKicker="CURRENT LOCATION"
+                  isCurrent={true}
+                  onFromPress={() => onClose()}
+                  toTitle={option.title}
+                  toMeta={option.meta}
+                  toKicker={option.type}
+                  isNew={selectedOption === 1}
+                  onToPress={() => setIsDropUpOpen((prev) => !prev)}
+                  routeIcon={route.icon}
+                  routeDuration={route.duration}
+                  routeSub={route.label}
+                  routeBadge={route.badge}
+                  routeBadgeClass={route.badgeClass}
+                  dropUpOptions={otherOptions}
+                  onSelectDropUpOption={(idx) => {
+                    onSelectOption(idx)
+                    setIsDropUpOpen(false)
+                  }}
+                  isDropUpOpen={isDropUpOpen}
+                  onCloseDropUp={() => setIsDropUpOpen(false)}
+                  arrowDirection="up"
+                />
+              )
+            })()}
+
+            <div className="bounce-action-bar compact">
+              <Tap
+                label={
+                  selectedOption === 0
+                    ? options[0].action
+                    : insertsAfterCurrent
+                      ? "Add selected place after KŌBASHI"
+                      : "Confirm Bounce"
+                }
+                className="confirm-bounce"
+                onPress={confirmSelection}
+              >
+                {selectedOption === 0
+                  ? options[0].action
+                  : insertsAfterCurrent
+                    ? "Add after KŌBASHI"
+                    : "Confirm Bounce"}
+                <Icon
+                  name={
+                    selectedOption === 0
+                      ? "check"
+                      : insertsAfterCurrent
+                        ? "plus"
+                        : "shuffle"
+                  }
+                  size={19}
+                />
+              </Tap>
             </div>
           </div>
-          <div className="option-stack">
-            {options.map((option, index) => {
-              const route = getBounceRoute(option, index, sourceStop)
-              return (
-                <Tap
-                  label={`Select ${option.title}`}
-                  className={`option-pill option-${index} ${
-                    selectedOption === index ? "selected" : ""
-                  }`}
-                  onPress={() => onSelectOption(index)}
-                  key={option.title}
-                >
-                  <div className="option-top">
-                    <span className="option-type">{option.type}</span>
-                    <span className="option-number">0{index + 1}</span>
-                  </div>
-                  <div className="option-title-row">
-                    <div>
-                      <b>{option.title}</b>
-                      <small>{option.meta}</small>
-                    </div>
-                    <span className="route-mode-icon">
-                      <Icon name={route.icon} size={20} />
-                    </span>
-                  </div>
-                  <p>{option.detail}</p>
-                  <div className="route-summary">
-                    <span className="route-mode-label">{route.label}</span>
-                    {route.badge && (
-                      <span className={`transit-badge ${route.badgeClass}`}>
-                        {route.badge}
-                      </span>
-                    )}
-                    <strong>{route.duration}</strong>
-                    <span className="selection-check">
-                      <Icon name="check" size={16} />
-                    </span>
-                  </div>
-                </Tap>
-              )
-            })}
+        ) : (
+          <>
+            <div className="bounce-scroll">
+              <div className="bounce-intro">
+                <AskMark />
+                <div>
+                  <span>
+                    {sourceStop.time} • {sourceStop.title}
+                  </span>
+                  <div>What should we do next?</div>
+                  <p>
+                    {insertsAfterCurrent
+                      ? "Choose an additional stop to add after KŌBASHI."
+                      : `Choose an option to replace ${sourceStop.title}.`}
+                  </p>
+                </div>
+              </div>
+              <div className="option-stack">
+                {options.map((option, index) => {
+                  const route = getBounceRoute(option, index, sourceStop)
+                  return (
+                    <Tap
+                      label={`Select ${option.title}`}
+                      className={`option-pill option-${index} ${
+                        selectedOption === index ? "selected" : ""
+                      }`}
+                      onPress={() => onSelectOption(index)}
+                      key={option.title}
+                    >
+                      <div className="option-top">
+                        <span className="option-type">{option.type}</span>
+                        <span className="option-number">0{index + 1}</span>
+                      </div>
+                      <div className="option-title-row">
+                        <div>
+                          <b>{option.title}</b>
+                          <small>{option.meta}</small>
+                        </div>
+                        <span className="route-mode-icon">
+                          <Icon name={route.icon} size={20} />
+                        </span>
+                      </div>
+                      <p>{option.detail}</p>
+                      <div className="route-summary">
+                        <span className="route-mode-label">{route.label}</span>
+                        {route.badge && (
+                          <span className={`transit-badge ${route.badgeClass}`}>
+                            {route.badge}
+                          </span>
+                        )}
+                        <strong>{route.duration}</strong>
+                        <span className="selection-check">
+                          <Icon name="check" size={16} />
+                        </span>
+                      </div>
+                    </Tap>
+                  )
+                })}
+              </div>
+            </div>
+            <div className="bounce-action-bar">
+              <Tap
+                label={
+                  selectedOption === 0
+                    ? options[0].action
+                    : insertsAfterCurrent
+                      ? "Add selected place after KŌBASHI"
+                      : "Confirm Bounce"
+                }
+                className="confirm-bounce"
+                onPress={confirmSelection}
+              >
+                {selectedOption === 0
+                  ? options[0].action
+                  : insertsAfterCurrent
+                    ? "Add after KŌBASHI"
+                    : "Confirm Bounce"}
+                <Icon
+                  name={
+                    selectedOption === 0
+                      ? "check"
+                      : insertsAfterCurrent
+                        ? "plus"
+                        : "shuffle"
+                  }
+                  size={19}
+                />
+              </Tap>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function SearchAlongRouteScreen({
+  theme,
+  targetStop,
+  existingStops = [],
+  onBack,
+  onSelectPlace,
+}: {
+  theme: Theme
+  targetStop?: TimelineStop | null
+  existingStops?: TimelineStop[]
+  onBack: () => void
+  onSelectPlace: (placeName: string, targetStop?: TimelineStop | null) => void
+}) {
+  const [query, setQuery] = useState("")
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(true) // Starts open like "Search 1.jpeg"
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    // Focus real input when opened
+    const timer = setTimeout(() => {
+      inputRef.current?.focus()
+    }, 100)
+    return () => clearTimeout(timer)
+  }, [])
+
+  const categories = [
+    { id: "gas", name: "Gas stations", icon: "petrol" as IconName },
+    { id: "restaurants", name: "Restaurants", icon: "restaurants" as IconName },
+    { id: "coffee", name: "Coffee shops", icon: "coffee" as IconName },
+    { id: "grocery", name: "Grocery stores", icon: "grocery" as IconName },
+    { id: "reststops", name: "Rest stops", icon: "restroom" as IconName },
+    { id: "hotels", name: "Hotels", icon: "hotel" as IconName },
+  ]
+
+  const recents = [
+    {
+      id: "r1",
+      title: "239 Alexandra Road",
+      meta: "Singapore",
+    },
+    {
+      id: "r2",
+      title: "Holiday Inn Singapore Atrium by I...",
+      meta: "Outram Road, Singapore",
+    },
+    {
+      id: "r3",
+      title: "Singapore Polo Club",
+      meta: "Mount Pleasant Road, Singapore",
+      status: "Open · Closes 10 pm",
+      statusColor: "green",
+    },
+    {
+      id: "r4",
+      title: "Social Smoker",
+      meta: "Jalan Kuras, Singapore",
+      status: "Closed · Opens 4 pm Fri",
+      statusColor: "red",
+    },
+    {
+      id: "r5",
+      title: "En Ramen",
+      meta: "Toh Guan Road, Singapore",
+      status: "Closes soon · 7:55 pm · Opens 11:30 a...",
+      statusColor: "orange",
+    },
+    {
+      id: "r6",
+      title: "Busan Pork Soup - Jurong 505",
+      meta: "Jurong West Street 52, #01-35, Singa...",
+      status: "Closed · Opens 10:30 am",
+      statusColor: "red",
+    },
+    {
+      id: "r7",
+      title: "Te Anau Lakeview Holiday Park &...",
+      meta: "Manapouri Te Anau Highway, Te Anau,...",
+    },
+    {
+      id: "r8",
+      title: "Marina One West Tower",
+      meta: "Straits View, Marina One Show Gallery,...",
+    },
+  ]
+
+  // Dynamic autofill suggestions when text is typed:
+  // "Whatever letter is typed, give autofill responses in a list below. I want to have 'Boat Quay' as the first option and another one or two based on the existing locations in the itinerary plan."
+  const suggestions = [
+    {
+      id: "boat-quay",
+      title: "Boat Quay",
+      meta: "Historic riverfront · Singapore River · 4.5 ★ (1,240)",
+      badge: "Along route",
+      isPrimary: true,
+    },
+    {
+      id: "kobashi",
+      title: "KŌBASHI",
+      meta: "Bakery & sourdough · South Bridge Road",
+      badge: "On plan",
+      isPrimary: false,
+    },
+    {
+      id: "green-oasis",
+      title: "Green Oasis · CapitaSpring",
+      meta: "Sky botanical garden · 88 Market St",
+      badge: "On plan",
+      isPrimary: false,
+    },
+    {
+      id: "lau-pa-sat",
+      title: "Lau Pa Sat",
+      meta: "Historic Victorian hawker market · 18 Raffles Quay",
+      badge: "Near route",
+      isPrimary: false,
+    },
+  ]
+
+  const handleKeyPress = (key: string) => {
+    if (key === "backspace") {
+      setQuery((prev) => prev.slice(0, -1))
+    } else if (key === "space") {
+      setQuery((prev) => prev + " ")
+    } else if (key === "return" || key === "search") {
+      setIsKeyboardOpen(false)
+    } else {
+      setQuery((prev) => prev + key)
+    }
+  }
+
+  return (
+    <div
+      className={`screen-page search-along-route-page ${
+        theme === "light" ? "theme-light" : "theme-dark"
+      }`}
+    >
+      {/* Top Header / Search Bar */}
+      <div className="search-route-header">
+        <button
+          type="button"
+          className="search-route-back-btn"
+          onClick={onBack}
+          aria-label="Back to saved plan"
+        >
+          <Icon name="back" size={20} />
+        </button>
+
+        <div
+          className="search-route-input-bar"
+          onClick={() => {
+            setIsKeyboardOpen(true)
+            inputRef.current?.focus()
+          }}
+        >
+          <input
+            ref={inputRef}
+            type="text"
+            className="search-route-real-input"
+            value={query}
+            placeholder="Search along route"
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => setIsKeyboardOpen(true)}
+            autoComplete="off"
+            spellCheck="false"
+          />
+          {query.length > 0 && (
+            <button
+              type="button"
+              className="search-route-clear-btn"
+              onClick={(e) => {
+                e.stopPropagation()
+                setQuery("")
+                inputRef.current?.focus()
+              }}
+              aria-label="Clear search text"
+            >
+              <Icon name="close" size={16} />
+            </button>
+          )}
+          <div className="search-route-mic-btn">
+            <Icon name="mic" size={19} />
           </div>
         </div>
-        <div className="bounce-action-bar">
-          <Tap
-            label={
-              selectedOption === 0
-                ? options[0].action
-                : insertsAfterCurrent
-                  ? "Add selected place after KŌBASHI"
-                  : "Confirm Bounce"
-            }
-            className="confirm-bounce"
-            onPress={confirmSelection}
-          >
-            {selectedOption === 0
-              ? options[0].action
-              : insertsAfterCurrent
-                ? "Add after KŌBASHI"
-                : "Confirm Bounce"}
-            <Icon
-              name={
-                selectedOption === 0
-                  ? "check"
-                  : insertsAfterCurrent
-                    ? "plus"
-                    : "shuffle"
-              }
-              size={19}
-            />
-          </Tap>
+      </div>
+
+      {/* Main Content Scroll Area */}
+      <div
+        className="search-route-scroll"
+        onClick={() => {
+          // If tapping in scroll content while keyboard is open, dismiss keyboard (Search 2.jpeg)
+          if (isKeyboardOpen) setIsKeyboardOpen(false)
+        }}
+      >
+        {query.trim().length === 0 ? (
+          /* Empty query: Category Grid + Choose on Map + Quick Places + Recents */
+          <>
+            <div className="search-categories-grid">
+              {categories.map((cat) => (
+                <div
+                  key={cat.id}
+                  className="search-category-card"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setQuery(cat.name)
+                  }}
+                >
+                  <div className="search-category-icon">
+                    <Icon name={cat.icon} size={22} />
+                  </div>
+                  <span className="search-category-name">{cat.name}</span>
+                </div>
+              ))}
+            </div>
+
+            <div
+              className="search-choose-map-row"
+              onClick={(e) => {
+                e.stopPropagation()
+                onBack()
+              }}
+            >
+              <div className="search-choose-map-icon">
+                <Icon name="pin" size={20} />
+              </div>
+              <span>Choose on map</span>
+            </div>
+
+            <div className="search-quick-places-row">
+              <div
+                className="search-quick-place-item"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setQuery("Home")
+                }}
+              >
+                <div className="search-quick-place-icon">
+                  <Icon name="home" size={18} />
+                </div>
+                <div className="search-quick-place-info">
+                  <b>Home</b>
+                  <small>600317</small>
+                </div>
+              </div>
+              <div
+                className="search-quick-place-item"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setQuery("Work")
+                }}
+              >
+                <div className="search-quick-place-icon">
+                  <Icon name="work" size={18} />
+                </div>
+                <div className="search-quick-place-info">
+                  <b>Work</b>
+                  <small>Set location</small>
+                </div>
+              </div>
+              <div
+                className="search-quick-place-item"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setQuery("Saved places")
+                }}
+              >
+                <div className="search-quick-place-icon">
+                  <Icon name="places" size={18} />
+                </div>
+                <div className="search-quick-place-info">
+                  <b>Places</b>
+                  <small>282 places</small>
+                </div>
+              </div>
+            </div>
+
+            <div className="search-recents-section">
+              <div className="search-recents-header">
+                <span>Recent</span>
+                <Icon name="info" size={16} />
+              </div>
+              <div className="search-recents-list">
+                {recents.map((item) => (
+                  <div
+                    key={item.id}
+                    className="search-recent-item"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setQuery(item.title)
+                    }}
+                  >
+                    <div className="search-recent-clock">
+                      <Icon name="clock" size={16} />
+                    </div>
+                    <div className="search-recent-info">
+                      <div className="search-recent-title">{item.title}</div>
+                      <div className="search-recent-meta">{item.meta}</div>
+                      {item.status && (
+                        <div
+                          className={`search-recent-status ${item.statusColor}`}
+                        >
+                          {item.status}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        ) : (
+          /* Text is typed: Autofill responses */
+          <div className="search-autofill-container">
+            <div className="search-autofill-heading">Suggestions along route</div>
+            <div className="search-autofill-list">
+              {suggestions.map((item) => (
+                <div
+                  key={item.id}
+                  className={`search-autofill-item ${
+                    item.isPrimary ? "primary" : ""
+                  }`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onSelectPlace(item.title, targetStop)
+                  }}
+                >
+                  <div className="search-autofill-pin">
+                    <Icon name="pin" size={19} />
+                  </div>
+                  <div className="search-autofill-info">
+                    <div className="search-autofill-title">{item.title}</div>
+                    <div className="search-autofill-meta">{item.meta}</div>
+                  </div>
+                  {item.badge && (
+                    <span className="search-autofill-badge">{item.badge}</span>
+                  )}
+                  <div className="search-autofill-add">
+                    <Icon name="plus" size={16} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* iOS Keyboard Drawer (Search 1.jpeg vs Search 2.jpeg) */}
+      <div
+        className={`ios-keyboard-drawer ${
+          isKeyboardOpen ? "drawer-open" : "drawer-closed"
+        }`}
+      >
+        <div
+          className="keyboard-drag-handle"
+          onClick={() => setIsKeyboardOpen(!isKeyboardOpen)}
+          title={
+            isKeyboardOpen
+              ? "Tap or swipe down to hide keyboard"
+              : "Tap to show keyboard"
+          }
+        >
+          <span />
+        </div>
+        <div className="ios-keyboard-keys">
+          {/* Row 1: q w e r t y u i o p */}
+          <div className="keyboard-row">
+            {["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"].map((k) => (
+              <button
+                key={k}
+                type="button"
+                className="key-btn"
+                onClick={() => handleKeyPress(k)}
+              >
+                {k}
+              </button>
+            ))}
+          </div>
+
+          {/* Row 2: a s d f g h j k l */}
+          <div className="keyboard-row indent-row">
+            {["a", "s", "d", "f", "g", "h", "j", "k", "l"].map((k) => (
+              <button
+                key={k}
+                type="button"
+                className="key-btn"
+                onClick={() => handleKeyPress(k)}
+              >
+                {k}
+              </button>
+            ))}
+          </div>
+
+          {/* Row 3: Shift, z x c v b n m, Backspace */}
+          <div className="keyboard-row">
+            <button
+              type="button"
+              className="key-btn key-special key-shift"
+              aria-label="Shift"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 4 4 14h5v6h6v-6h5z" />
+              </svg>
+            </button>
+            {["z", "x", "c", "v", "b", "n", "m"].map((k) => (
+              <button
+                key={k}
+                type="button"
+                className="key-btn"
+                onClick={() => handleKeyPress(k)}
+              >
+                {k}
+              </button>
+            ))}
+            <button
+              type="button"
+              className="key-btn key-special key-backspace"
+              onClick={() => handleKeyPress("backspace")}
+              aria-label="Backspace"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="m18 9-6 6M12 9l6 6M21 4H8l-6 8 6 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Row 4: 123, emoji, spacebar, Search / Return */}
+          <div className="keyboard-row bottom-row">
+            <button type="button" className="key-btn key-special key-num">
+              123
+            </button>
+            <button
+              type="button"
+              className="key-btn key-special key-emoji"
+              aria-label="Emoji"
+            >
+              😊
+            </button>
+            <button
+              type="button"
+              className="key-btn key-space"
+              onClick={() => handleKeyPress("space")}
+              aria-label="Space"
+            >
+              <span className="space-lang">EN</span>
+            </button>
+            <button
+              type="button"
+              className="key-btn key-return"
+              onClick={() => handleKeyPress("return")}
+              aria-label="Search or hide keyboard"
+            >
+              <Icon name="search" size={17} />
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -2379,8 +6463,9 @@ function App() {
     "place",
     "bounce",
     "updated",
+    "search-along-route",
   ].includes(requestedScreen ?? "")
-    ? requestedScreen as Screen
+    ? (requestedScreen as Screen)
     : "map"
   const [theme, setTheme] = useState<Theme>(
     new URLSearchParams(window.location.search).get("theme") === "light"
@@ -2388,8 +6473,119 @@ function App() {
       : "dark",
   )
   const [screen, setScreen] = useState<Screen>(initialScreen)
-  const [planStops, setPlanStops] = useState<TimelineStop[]>(initialStops)
-  const [updateMessage, setUpdateMessage] = useState("")
+  const [routeSearchTargetStop, setRouteSearchTargetStop] = useState<TimelineStop | null>(null)
+  const [planStops, setPlanStops] = useState<TimelineStop[]>(() => {
+    const isMulti =
+      new URLSearchParams(window.location.search).get("multi") === "1"
+    const isReplaceParam =
+      new URLSearchParams(window.location.search).get("replace") === "1" ||
+      new URLSearchParams(window.location.search).get("swap") === "1"
+    if (isMulti || requestedScreen === "updated") {
+      const stops = [...initialStops]
+      if (isReplaceParam) {
+        const greenIdx = stops.findIndex((s) => s.id === "green-oasis")
+        if (greenIdx >= 0) {
+          const orig = stops[greenIdx]
+          stops[greenIdx] = {
+            id: "revisit-kahve-replaced",
+            time: "2:00 pm",
+            title: "Kahve",
+            meta: `Coffee · Replaced ${orig.title}`,
+            changed: true,
+            isReplacement: true,
+            bounceSource: "kobashi",
+            originalTitle: orig.title,
+            originalMeta: orig.meta,
+            history: [
+              {
+                id: orig.id,
+                title: orig.title,
+                meta: orig.meta,
+                past: orig.past,
+                current: orig.current,
+                changed: false,
+              },
+            ],
+          }
+        }
+        return recalculateStopTimes(stops)
+      }
+      const idx = stops.findIndex((s) => s.id === "kobashi")
+      if (idx >= 0) {
+        if (isMulti) {
+          stops.splice(
+            idx + 1,
+            0,
+            {
+              id: "revisit-suntec",
+              time: "1:45 pm",
+              title: "Suntec City views",
+              meta: "Walk · Added back",
+              changed: true,
+              bounceSource: "kobashi",
+            },
+            {
+              id: "revisit-kahve",
+              time: "2:30 pm",
+              title: "Kahve",
+              meta: "Coffee · Added back",
+              changed: true,
+              bounceSource: "kobashi",
+            },
+            {
+              id: "bounce-loulouca",
+              time: "3:15 pm",
+              title: "Loulouca",
+              meta: "Bounce addition · Nearby now",
+              changed: true,
+              bounceSource: "kobashi",
+            },
+          )
+          return recalculateStopTimes(stops)
+        }
+
+        const bounceParam =
+          new URLSearchParams(window.location.search)
+            .get("bounce")
+            ?.toLowerCase() || ""
+        const isLoulouca = bounceParam.includes("loulouca")
+        stops.splice(idx + 1, 0, {
+          id: isLoulouca ? "bounce-loulouca" : "bounce-maxwell",
+          time: "2:00 pm",
+          title: isLoulouca ? "Loulouca" : "Maxwell Food Centre",
+          meta: "Bounce addition · Nearby now",
+          changed: true,
+          bounceSource: "kobashi",
+        })
+        return recalculateStopTimes(stops)
+      }
+      return stops
+    }
+    return initialStops
+  })
+  const [updateMessage, setUpdateMessage] = useState(() => {
+    const isMulti =
+      new URLSearchParams(window.location.search).get("multi") === "1"
+    const isReplaceParam =
+      new URLSearchParams(window.location.search).get("replace") === "1" ||
+      new URLSearchParams(window.location.search).get("swap") === "1"
+    if (isReplaceParam) {
+      return "Kahve replaced Green Oasis · CapitaSpring to fit your schedule."
+    }
+    if (isMulti) {
+      return "3 places added after KŌBASHI."
+    }
+    if (requestedScreen === "updated") {
+      const bounceParam =
+        new URLSearchParams(window.location.search)
+          .get("bounce")
+          ?.toLowerCase() || ""
+      return bounceParam.includes("loulouca")
+        ? "Loulouca was added after KŌBASHI."
+        : "Maxwell Food Centre was added after KŌBASHI."
+    }
+    return ""
+  })
   const requestedStop = new URLSearchParams(window.location.search).get("stop")
   const [selectedStop, setSelectedStop] = useState<TimelineStop>(
     requestedStop
@@ -2407,7 +6603,7 @@ function App() {
     if (iframeRef.current && iframeRef.current.contentWindow) {
       iframeRef.current.contentWindow.postMessage(
         { type: "HIGHLIGHT_LEG", index },
-        "*"
+        "*",
       )
     }
   }
@@ -2417,7 +6613,7 @@ function App() {
     if (iframeRef.current && iframeRef.current.contentWindow) {
       iframeRef.current.contentWindow.postMessage(
         { type: "RESET_HIGHLIGHT" },
-        "*"
+        "*",
       )
     }
   }
@@ -2430,17 +6626,17 @@ function App() {
           type: "SET_BOUNCE_SELECTED",
           index,
         },
-        "*"
+        "*",
       )
     }
   }
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.setAttribute("data-theme", theme)
     if (iframeRef.current && iframeRef.current.contentWindow) {
       iframeRef.current.contentWindow.postMessage(
-        { type: 'THEME_TOGGLE', isDark: theme === 'dark' },
-        '*'
+        { type: "THEME_TOGGLE", isDark: theme === "dark" },
+        "*",
       )
     }
   }, [theme])
@@ -2454,17 +6650,20 @@ function App() {
             mode: "bounce",
             selectedIndex: bounceOptionIndex,
           },
-          "*"
+          "*",
         )
       } else {
         const isItinerary = screen === "plan" || screen === "updated"
+        const isExpanded =
+          new URLSearchParams(window.location.search).get("expanded") === "1"
         iframeRef.current.contentWindow.postMessage(
           {
             type: "SET_MODE",
             mode: isItinerary ? "itinerary" : "explore",
             stops: planStops,
+            drawerDown: isExpanded,
           },
-          "*"
+          "*",
         )
       }
     }
@@ -2482,55 +6681,210 @@ function App() {
     window.addEventListener("message", handleIframeMessage)
     return () => window.removeEventListener("message", handleIframeMessage)
   }, [])
+  const handleDeleteStop = (stopId: string) => {
+    const stopToDelete = planStops.find((s) => s.id === stopId)
+    const nextStops = planStops.filter((s) => s.id !== stopId)
+    const recalculated = recalculateStopTimes(nextStops)
+    setPlanStops(recalculated)
+    setSelectedLegIndex(null)
+    if (stopToDelete) {
+      setUpdateMessage(`${stopToDelete.title} was removed from the plan.`)
+    }
+  }
+
   const applyBounce = (place: string) => {
     let sourceIndex = planStops.findIndex((stop) => stop.id === selectedStop.id)
     if (sourceIndex < 0) return
     let next = [...planStops]
     if (selectedStop.id === "kobashi") {
-      next = next.filter((stop) => stop.bounceSource !== "kobashi")
-      sourceIndex = next.findIndex((stop) => stop.id === "kobashi")
-      next.splice(sourceIndex + 1, 0, {
-        id: "bounce-kobashi",
+      const lower = place.toLowerCase()
+      const slug = lower.includes("maxwell")
+        ? "maxwell"
+        : lower.includes("loulouca")
+          ? "loulouca"
+          : lower.includes("green") || lower.includes("capitaspring")
+            ? "green-oasis"
+            : lower.replace(/[^a-z0-9]+/g, "-")
+
+      let insertIndex = sourceIndex
+      while (
+        insertIndex + 1 < next.length &&
+        (next[insertIndex + 1].bounceSource === "kobashi" ||
+          next[insertIndex + 1].changed)
+      ) {
+        insertIndex++
+      }
+
+      next.splice(insertIndex + 1, 0, {
+        id: `bounce-${slug}-${Date.now()}`,
         time: "2:00 pm",
         title: place,
         meta: "Bounce addition · Nearby now",
         changed: true,
         bounceSource: "kobashi",
       })
-      setUpdateMessage(`${place} was added after KŌBASHI.`)
+      next = recalculateStopTimes(next)
+      setUpdateMessage(`${place} was added after ${next[insertIndex].title}.`)
     } else {
+      const prevHistory: StopHistoryItem[] = selectedStop.history
+        ? [...selectedStop.history]
+        : []
+      prevHistory.push({
+        id: selectedStop.id,
+        title: selectedStop.title,
+        meta: selectedStop.meta,
+        past: selectedStop.past,
+        current: selectedStop.current,
+        changed: selectedStop.changed,
+        bounceSource: selectedStop.bounceSource,
+        originalTitle: selectedStop.originalTitle,
+        originalMeta: selectedStop.originalMeta,
+      })
       next[sourceIndex] = {
         ...selectedStop,
+        id: `bounce-${place.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`,
         title: place,
-        meta: "Bounce replacement · Real-time pick",
+        meta: `Bounce replacement · Replaced ${selectedStop.title}`,
         changed: true,
+        isReplacement: true,
         originalTitle: selectedStop.originalTitle ?? selectedStop.title,
         originalMeta: selectedStop.originalMeta ?? selectedStop.meta,
+        history: prevHistory,
       }
       setUpdateMessage(`${place} replaced ${selectedStop.title}.`)
     }
     setPlanStops(next)
     setScreen("updated")
   }
-  const applyRevisit = (afterId: string) => {
+  const applyRevisit = (afterId: string, customStop?: TimelineStop) => {
+    const stopToUse = customStop || selectedStop
     const targetIndex = planStops.findIndex((stop) => stop.id === afterId)
     if (targetIndex < 0) return
+    const kobashiIdx = planStops.findIndex((s) => s.id === "kobashi")
+    const isAfterKobashi =
+      afterId === "kobashi" || (kobashiIdx >= 0 && targetIndex >= kobashiIdx)
     const revisitedStop: TimelineStop = {
-      ...selectedStop,
-      id: `revisit-${selectedStop.id}-${afterId}`,
-      time: "Revisit",
+      ...stopToUse,
+      id: `revisit-${stopToUse.id}-${Date.now()}`,
+      time: isAfterKobashi ? "2:00 pm" : "Revisit",
       past: false,
       current: false,
       changed: true,
-      meta: `${selectedStop.meta.split(" · ")[0]} · Added back`,
+      meta: `${stopToUse.meta.split(" · ")[0]} · Added back`,
+      bounceSource: isAfterKobashi ? "kobashi" : undefined,
     }
-    const next = [...planStops]
+    let next = [...planStops]
     next.splice(targetIndex + 1, 0, revisitedStop)
+    next = recalculateStopTimes(next)
     setPlanStops(next)
     setUpdateMessage(
-      `${selectedStop.title} was added after ${planStops[targetIndex].title}.`,
+      `${stopToUse.title} was added after ${planStops[targetIndex].title}.`,
     )
     setScreen("updated")
+  }
+  const applyRevisitReplace = (
+    replaceId: string,
+    customStop?: TimelineStop,
+  ) => {
+    const stopToUse = customStop || selectedStop
+    const targetIndex = planStops.findIndex((stop) => stop.id === replaceId)
+    if (targetIndex < 0) return
+    const replacedStop = planStops[targetIndex]
+    const prevHistory: StopHistoryItem[] = replacedStop.history
+      ? [...replacedStop.history]
+      : []
+    prevHistory.push({
+      id: replacedStop.id,
+      title: replacedStop.title,
+      meta: replacedStop.meta,
+      past: replacedStop.past,
+      current: replacedStop.current,
+      changed: replacedStop.changed,
+      bounceSource: replacedStop.bounceSource,
+      originalTitle: replacedStop.originalTitle,
+      originalMeta: replacedStop.originalMeta,
+    })
+
+    const revisitedStop: TimelineStop = {
+      ...stopToUse,
+      id: `revisit-${stopToUse.id}-${Date.now()}`,
+      time: replacedStop.time,
+      past: false,
+      current: false,
+      changed: true,
+      isReplacement: true,
+      meta: `${stopToUse.meta.split(" · ")[0]} · Replaced ${replacedStop.title}`,
+      bounceSource: "kobashi",
+      originalTitle: replacedStop.originalTitle ?? replacedStop.title,
+      originalMeta: replacedStop.originalMeta ?? replacedStop.meta,
+      history: prevHistory,
+    }
+    let next = [...planStops]
+    next[targetIndex] = revisitedStop
+    next = recalculateStopTimes(next)
+    setPlanStops(next)
+    setUpdateMessage(
+      `${stopToUse.title} replaced ${replacedStop.title} to fit your schedule.`,
+    )
+    setScreen("updated")
+  }
+  const handleUndoStop = (stopId: string) => {
+    const targetIndex = planStops.findIndex((s) => s.id === stopId)
+    if (targetIndex < 0) return
+    const current = planStops[targetIndex]
+
+    if (!current.history || current.history.length === 0) {
+      if (current.originalTitle) {
+        let next = [...planStops]
+        next[targetIndex] = {
+          ...current,
+          title: current.originalTitle,
+          meta: current.originalMeta || "",
+          changed: false,
+          isReplacement: false,
+          originalTitle: undefined,
+          originalMeta: undefined,
+          history: [],
+        }
+        next = recalculateStopTimes(next)
+        setPlanStops(next)
+        setUpdateMessage(`${current.originalTitle} was restored to the plan.`)
+        if (selectedStop.id === stopId) {
+          setSelectedStop(next[targetIndex])
+        }
+      }
+      return
+    }
+
+    const newHistory = [...current.history]
+    const lastState = newHistory.pop()!
+    const isBackToOriginal = newHistory.length === 0
+
+    let next = [...planStops]
+    next[targetIndex] = {
+      ...current,
+      id: lastState.id || current.id,
+      title: lastState.title,
+      meta: lastState.meta,
+      past: lastState.past,
+      current: lastState.current,
+      changed: !isBackToOriginal,
+      isReplacement: !isBackToOriginal,
+      bounceSource: lastState.bounceSource,
+      originalTitle: isBackToOriginal
+        ? undefined
+        : (current.originalTitle ?? lastState.originalTitle),
+      originalMeta: isBackToOriginal
+        ? undefined
+        : (current.originalMeta ?? lastState.originalMeta),
+      history: isBackToOriginal ? [] : newHistory,
+    }
+    next = recalculateStopTimes(next)
+    setPlanStops(next)
+    setUpdateMessage(`${lastState.title} was restored to the plan.`)
+    if (selectedStop.id === stopId) {
+      setSelectedStop(next[targetIndex])
+    }
   }
   const revertSelectedStop = () => {
     if (!selectedStop.originalTitle || !selectedStop.originalMeta) return
@@ -2555,181 +6909,438 @@ function App() {
     )
     setScreen("updated")
   }
+  const handleSelectSearchPlace = (
+    placeName: string,
+    targetStop?: TimelineStop | null,
+  ) => {
+    const afterStop = targetStop || selectedStop || planStops[0]
+    const targetIndex = planStops.findIndex((s) => s.id === afterStop.id)
+    const insertIdx = targetIndex >= 0 ? targetIndex + 1 : 1
+
+    const prevStop = planStops[targetIndex >= 0 ? targetIndex : 0]
+
+    let timeStr = "10:15 am"
+    if (prevStop) {
+      if (prevStop.id === "kahve" || prevStop.title.includes("Kahve")) {
+        timeStr = "10:15 am"
+      } else if (prevStop.id === "suntec" || prevStop.title.includes("Suntec")) {
+        timeStr = "12:15 pm"
+      } else if (prevStop.id === "kobashi" || prevStop.title.includes("KŌBASHI")) {
+        timeStr = "1:45 pm"
+      } else if (prevStop.id === "green-oasis" || prevStop.title.includes("Green Oasis")) {
+        timeStr = "4:30 pm"
+      } else if (prevStop.id === "loulouca" || prevStop.title.includes("Loulouca")) {
+        timeStr = "8:30 pm"
+      } else {
+        timeStr = "Along route"
+      }
+    }
+
+    const newStop: TimelineStop = {
+      id: `place-${placeName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`,
+      time: timeStr,
+      title: placeName,
+      meta:
+        placeName === "Boat Quay"
+          ? "Historic riverfront · Singapore River"
+          : "Added to route",
+      past: false,
+      current: false,
+      changed: true,
+      isNew: true,
+      bounceSource: "search",
+    }
+
+    let next = [...planStops]
+    next.splice(insertIdx, 0, newStop)
+    next = recalculateStopTimes(next)
+    setPlanStops(next)
+    setUpdateMessage(`${placeName} was added after ${prevStop ? prevStop.title : "stop"}.`)
+    setScreen("plan")
+  }
   const selectedIndex = planStops.findIndex(
     (stop) => stop.id === selectedStop.id,
   )
   const nextSelectedStop =
     selectedIndex >= 0 ? planStops[selectedIndex + 1] : undefined
 
- return (
-    <main className={`app-shell ${theme === "light" ? "light-shell" : ""}`}>
-      
-      {/* 1. Phone Container (Wraps the Map to strictly bound it to the iPhone edges) */}
-      <div className={`phone theme-${theme}`} aria-live="polite" style={{ position: 'relative', overflow: 'hidden', background: 'transparent' }}>
-        
-        {/* Failsafe: Forces the native status bar and phone gradients to remain completely transparent */}
-        <style>{`
+  return (
+    <main
+      className={`app-shell ${
+        theme === "light" ? "light-shell" : "dark-shell"
+      }`}
+    >
+      {/* iPhone 18 Pro Black Chassis */}
+      <div className="iphone-pro-chassis">
+        {/* Hardware buttons on chassis */}
+        <div className="hardware-btn action-btn" title="Action Button" />
+        <div className="hardware-btn vol-up-btn" title="Volume Up" />
+        <div className="hardware-btn vol-down-btn" title="Volume Down" />
+        <div className="hardware-btn power-btn" title="Side Button" />
+        <div className="antenna-notch top-left" />
+        <div className="antenna-notch top-right" />
+        <div className="antenna-notch bot-left" />
+        <div className="antenna-notch bot-right" />
+
+        <div className="iphone-pro-inner-bezel">
+          {/* Dynamic Island */}
+          <div className="dynamic-island-cutout">
+            <div className="island-lens-element" />
+          </div>
+
+          {/* 1. Phone Container (Wraps the Map to strictly bound it to the iPhone edges) */}
+          <div
+            className={`phone theme-${theme}`}
+            aria-live="polite"
+            style={{
+              position: "relative",
+              overflow: "hidden",
+              background: "transparent",
+            }}
+          >
+            {/* Failsafe: Forces the native status bar and phone gradients to remain completely transparent */}
+            <style>{`
           .status-bar, .phone::before { background: transparent !important; box-shadow: none !important; }
         `}</style>
 
-        {/* 2. Global Background Map (Now strictly contained within the phone) */}
-        <iframe 
-          ref={iframeRef} 
-          src="/map-prototype.html" 
-          style={{ position: 'absolute', top: 0, left: 0, border: 'none', width: '100%', height: '100%', zIndex: 0 }}
-          title="Live Routing Map"
-        />
+            {/* 2. Global Background Map (Now strictly contained within the phone) */}
+            <iframe
+              ref={iframeRef}
+              src="/map-prototype.html"
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                border: "none",
+                width: "100%",
+                height: "100%",
+                zIndex: 0,
+              }}
+              title="Live Routing Map"
+            />
 
-        {/* 3. React Screen Overlays (pointerEvents: 'none' ensures the background map is fully interactive) */}
-        <div style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}>
-            <StatusBar />
-            
-            {screen === "map" && (
-              <MapScreen
+            {/* 3. React Screen Overlays (pointerEvents: 'none' ensures the background map is fully interactive) */}
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                zIndex: 1,
+                pointerEvents: "none",
+              }}
+            >
+              <StatusBar />
+
+              {screen === "map" && (
+                <MapScreen
                   saved={false}
                   theme={theme}
-                  onToggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
+                  onToggleTheme={() =>
+                    setTheme(theme === "dark" ? "light" : "dark")
+                  }
                   onAsk={() => setScreen("ask")}
                   onYou={() => setScreen("you")}
                   onDirections={() => setScreen("plan")}
                   onRecenter={() => {
                     if (iframeRef.current && iframeRef.current.contentWindow) {
-                      iframeRef.current.contentWindow.postMessage({ type: 'RECENTER' }, '*')
+                      iframeRef.current.contentWindow.postMessage(
+                        { type: "RECENTER" },
+                        "*",
+                      )
                     }
                   }}
-              />
-            )}
-            
-            {/* The rest of the screens are wrapped in pointerEvents: 'auto' so they behave like solid pages when active */}
-            {screen === "ask" && (
-              <div style={{ pointerEvents: 'auto', width: '100%', height: '100%' }}>
+                />
+              )}
+
+              {/* The rest of the screens are wrapped in pointerEvents: 'auto' so they behave like solid pages when active */}
+              {screen === "ask" && (
+                <div
+                  style={{
+                    pointerEvents: "auto",
+                    width: "100%",
+                    height: "100%",
+                  }}
+                >
                   <AskStart
-                      onHistory={() => setScreen("history")}
-                      onSend={() => setScreen("chat")}
-                      onClose={() => setScreen("map")}
+                    theme={theme}
+                    onHistory={() => setScreen("history")}
+                    onSend={() => setScreen("chat")}
+                    onClose={() => setScreen("map")}
                   />
-              </div>
-            )}
-            {screen === "history" && (
-              <div style={{ pointerEvents: 'auto', width: '100%', height: '100%' }}>
+                </div>
+              )}
+              {screen === "history" && (
+                <div
+                  style={{
+                    pointerEvents: "auto",
+                    width: "100%",
+                    height: "100%",
+                  }}
+                >
                   <HistoryScreen
-                      onOpen={() => setScreen("chat")}
-                      onClose={() => setScreen("ask")}
+                    theme={theme}
+                    onOpen={() => setScreen("chat")}
+                    onClose={() => setScreen("ask")}
                   />
-              </div>
-            )}
-            {screen === "chat" && (
-              <div style={{ pointerEvents: 'auto', width: '100%', height: '100%' }}>
+                </div>
+              )}
+              {screen === "chat" && (
+                <div
+                  style={{
+                    pointerEvents: "auto",
+                    width: "100%",
+                    height: "100%",
+                  }}
+                >
                   <ChatScreen
-                      onHistory={() => setScreen("history")}
-                      onBack={() => setScreen("ask")}
-                      onClose={() => setScreen("map")}
-                      onSave={() => setScreen("saved")}
+                    theme={theme}
+                    onHistory={() => setScreen("history")}
+                    onBack={() => setScreen("ask")}
+                    onClose={() => setScreen("map")}
+                    onSave={() => setScreen("saved")}
                   />
-              </div>
-            )}
-            {screen === "saved" && (
-              <MapScreen
+                </div>
+              )}
+              {screen === "saved" && (
+                <MapScreen
                   saved
                   theme={theme}
-                  onToggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
+                  onToggleTheme={() =>
+                    setTheme(theme === "dark" ? "light" : "dark")
+                  }
                   onAsk={() => setScreen("ask")}
                   onYou={() => setScreen("you")}
                   onDirections={() => setScreen("plan")}
                   onRecenter={() => {
                     if (iframeRef.current && iframeRef.current.contentWindow) {
-                      iframeRef.current.contentWindow.postMessage({ type: 'RECENTER' }, '*')
+                      iframeRef.current.contentWindow.postMessage(
+                        { type: "RECENTER" },
+                        "*",
+                      )
                     }
                   }}
-              />
-            )}
-            {screen === "you" && (
-              <div style={{ pointerEvents: 'auto', width: '100%', height: '100%' }}>
+                />
+              )}
+              {screen === "you" && (
+                <div
+                  style={{
+                    pointerEvents: "auto",
+                    width: "100%",
+                    height: "100%",
+                  }}
+                >
                   <YouScreen
-                      onPlan={() => setScreen("plan")}
-                      onExplore={() => setScreen("map")}
+                    onPlan={() => setScreen("plan")}
+                    onExplore={() => setScreen("map")}
                   />
-              </div>
-            )}
-            {screen === "plan" && (
-              <div style={{ pointerEvents: 'none', width: '100%', height: '100%' }}>
+                </div>
+              )}
+              {screen === "plan" && (
+                <div
+                  style={{
+                    pointerEvents: "none",
+                    width: "100%",
+                    height: "100%",
+                  }}
+                >
                   <PlanScreen
-                      stops={planStops}
-                      theme={theme}
-                      onToggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
-                      onCurrent={() => {
-                        if (iframeRef.current && iframeRef.current.contentWindow) {
-                          iframeRef.current.contentWindow.postMessage({ type: 'RECENTER' }, '*')
-                        }
-                      }}
-                      onBack={() => setScreen("you")}
-                      onPlace={(stop) => {
-                        setSelectedStop(stop)
-                        setScreen("place")
-                      }}
-                      selectedLegIndex={selectedLegIndex}
-                      onHighlightLeg={highlightRouteLeg}
-                      onResetHighlight={resetRouteHighlight}
+                    stops={planStops}
+                    theme={theme}
+                    onToggleTheme={() =>
+                      setTheme(theme === "dark" ? "light" : "dark")
+                    }
+                    onCurrent={() => {
+                      if (
+                        iframeRef.current &&
+                        iframeRef.current.contentWindow
+                      ) {
+                        iframeRef.current.contentWindow.postMessage(
+                          { type: "RECENTER" },
+                          "*",
+                        )
+                      }
+                    }}
+                    onBack={() => setScreen("you")}
+                    onPlace={(stop) => {
+                      setSelectedStop(stop)
+                      setScreen("place")
+                    }}
+                    selectedLegIndex={selectedLegIndex}
+                    onHighlightLeg={highlightRouteLeg}
+                    onResetHighlight={resetRouteHighlight}
+                    onToggleDrawer={(down) => {
+                      if (
+                        iframeRef.current &&
+                        iframeRef.current.contentWindow
+                      ) {
+                        iframeRef.current.contentWindow.postMessage(
+                          { type: "ITINERARY_DRAWER_TOGGLE", drawerDown: down },
+                          "*",
+                        )
+                      }
+                    }}
+                    onDeleteStop={handleDeleteStop}
+                    onUndoStop={handleUndoStop}
+                    onRevisit={applyRevisit}
+                    onReplaceStop={applyRevisitReplace}
+                    onBounce={(stop) => {
+                      setSelectedStop(stop)
+                      setScreen("bounce")
+                    }}
+                    onSearch={(stop) => {
+                      setRouteSearchTargetStop(stop)
+                      setScreen("search-along-route")
+                    }}
                   />
-              </div>
-            )}
-            {screen === "place" && (
-              <div style={{ pointerEvents: 'auto', width: '100%', height: '100%' }}>
+                </div>
+              )}
+              {screen === "place" && (
+                <div
+                  style={{
+                    pointerEvents: "auto",
+                    width: "100%",
+                    height: "100%",
+                  }}
+                >
                   <PlaceScreen
-                      stop={selectedStop}
-                      nextStop={nextSelectedStop}
-                      placementOptions={planStops.filter((stop) => !stop.past)}
-                      onBounce={() => setScreen("bounce")}
-                      onRevisit={applyRevisit}
-                      onRevert={revertSelectedStop}
-                      onBack={() => setScreen("plan")}
+                    stop={selectedStop}
+                    nextStop={nextSelectedStop}
+                    placementOptions={planStops.filter((stop) => !stop.past)}
+                    fullItinerary={planStops}
+                    onBounce={() => setScreen("bounce")}
+                    onRevisit={applyRevisit}
+                    onReplaceStop={applyRevisitReplace}
+                    onRevert={revertSelectedStop}
+                    onBack={() => setScreen("plan")}
                   />
-              </div>
-            )}
-            {screen === "bounce" && (
-              <div style={{ pointerEvents: 'none', width: '100%', height: '100%' }}>
+                </div>
+              )}
+              {screen === "bounce" && (
+                <div
+                  style={{
+                    pointerEvents: "none",
+                    width: "100%",
+                    height: "100%",
+                  }}
+                >
                   <BounceScreen
-                      sourceStop={selectedStop}
-                      theme={theme}
-                      onToggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
-                      onRecenter={() => {
-                        if (iframeRef.current && iframeRef.current.contentWindow) {
-                          iframeRef.current.contentWindow.postMessage({ type: 'RECENTER_BOUNCE' }, '*')
-                        }
-                      }}
-                      onClose={() => setScreen("place")}
-                      onSelect={(place) => {
-                        applyBounce(place)
-                        setScreen("updated")
-                      }}
-                      selectedOption={bounceOptionIndex}
-                      onSelectOption={handleSelectBounceOption}
+                    sourceStop={selectedStop}
+                    theme={theme}
+                    onToggleTheme={() =>
+                      setTheme(theme === "dark" ? "light" : "dark")
+                    }
+                    onRecenter={() => {
+                      if (
+                        iframeRef.current &&
+                        iframeRef.current.contentWindow
+                      ) {
+                        iframeRef.current.contentWindow.postMessage(
+                          { type: "RECENTER_BOUNCE" },
+                          "*",
+                        )
+                      }
+                    }}
+                    onClose={() => setScreen("place")}
+                    onSelect={(place) => {
+                      applyBounce(place)
+                      setScreen("updated")
+                    }}
+                    selectedOption={bounceOptionIndex}
+                    onSelectOption={handleSelectBounceOption}
+                    onToggleDrawer={(down) => {
+                      if (
+                        iframeRef.current &&
+                        iframeRef.current.contentWindow
+                      ) {
+                        iframeRef.current.contentWindow.postMessage(
+                          { type: "BOUNCE_DRAWER_TOGGLE", drawerDown: down },
+                          "*",
+                        )
+                      }
+                    }}
                   />
-              </div>
-            )}
-            {screen === "updated" && (
-              <div style={{ pointerEvents: 'none', width: '100%', height: '100%' }}>
+                </div>
+              )}
+              {screen === "updated" && (
+                <div
+                  style={{
+                    pointerEvents: "none",
+                    width: "100%",
+                    height: "100%",
+                  }}
+                >
                   <PlanScreen
-                      stops={planStops}
-                      theme={theme}
-                      onToggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")}
-                      onCurrent={() => {
-                        if (iframeRef.current && iframeRef.current.contentWindow) {
-                          iframeRef.current.contentWindow.postMessage({ type: 'RECENTER' }, '*')
-                        }
-                      }}
-                      updateMessage={updateMessage}
-                      onBack={() => setScreen("you")}
-                      onPlace={(stop) => {
-                        setSelectedStop(stop)
-                        setScreen("place")
-                      }}
-                      selectedLegIndex={selectedLegIndex}
-                      onHighlightLeg={highlightRouteLeg}
-                      onResetHighlight={resetRouteHighlight}
+                    stops={planStops}
+                    theme={theme}
+                    onToggleTheme={() =>
+                      setTheme(theme === "dark" ? "light" : "dark")
+                    }
+                    onCurrent={() => {
+                      if (
+                        iframeRef.current &&
+                        iframeRef.current.contentWindow
+                      ) {
+                        iframeRef.current.contentWindow.postMessage(
+                          { type: "RECENTER" },
+                          "*",
+                        )
+                      }
+                    }}
+                    updateMessage={updateMessage}
+                    onBack={() => setScreen("you")}
+                    onPlace={(stop) => {
+                      setSelectedStop(stop)
+                      setScreen("place")
+                    }}
+                    selectedLegIndex={selectedLegIndex}
+                    onHighlightLeg={highlightRouteLeg}
+                    onResetHighlight={resetRouteHighlight}
+                    onToggleDrawer={(down) => {
+                      if (
+                        iframeRef.current &&
+                        iframeRef.current.contentWindow
+                      ) {
+                        iframeRef.current.contentWindow.postMessage(
+                          { type: "ITINERARY_DRAWER_TOGGLE", drawerDown: down },
+                          "*",
+                        )
+                      }
+                    }}
+                    onDeleteStop={handleDeleteStop}
+                    onUndoStop={handleUndoStop}
+                    onRevisit={applyRevisit}
+                    onReplaceStop={applyRevisitReplace}
+                    onBounce={(stop) => {
+                      setSelectedStop(stop)
+                      setScreen("bounce")
+                    }}
+                    onSearch={(stop) => {
+                      setRouteSearchTargetStop(stop)
+                      setScreen("search-along-route")
+                    }}
                   />
-              </div>
-            )}
+                </div>
+              )}
+              {screen === "search-along-route" && (
+                <div
+                  style={{
+                    pointerEvents: "auto",
+                    width: "100%",
+                    height: "100%",
+                  }}
+                >
+                  <SearchAlongRouteScreen
+                    theme={theme}
+                    targetStop={routeSearchTargetStop}
+                    existingStops={planStops}
+                    onBack={() => setScreen("plan")}
+                    onSelectPlace={(placeName, target) => {
+                      handleSelectSearchPlace(placeName, target)
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </main>
