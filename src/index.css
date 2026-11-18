@@ -1618,7 +1618,7 @@ body.figma-device-mode {
 
 .time-picker-wheels-wrapper {
   position: relative;
-  height: 180px;
+  height: 190px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1647,12 +1647,22 @@ body.figma-device-mode {
 
 .time-picker-wheel-col {
   flex: 1;
-  height: 180px;
+  height: 190px;
   overflow-y: auto;
   scroll-snap-type: y mandatory;
   scrollbar-width: none;
   z-index: 2;
   box-sizing: border-box;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+}
+.time-picker-wheel-col.is-dragging {
+  cursor: grabbing;
+}
+.time-picker-wheel-col.is-dragging .wheel-item {
+  cursor: grabbing;
 }
 .time-picker-wheel-col::-webkit-scrollbar {
   display: none;

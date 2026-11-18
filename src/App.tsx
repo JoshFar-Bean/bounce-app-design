@@ -4602,40 +4602,160 @@ function WheelColumn<T extends string | number>({
   itemHeight?: number
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const isUserScrolling = useRef(false)
+  const isDraggingRef = useRef(false)
+  const [isDragging, setIsDragging] = useState(false)
+  const hasMovedRef = useRef(false)
+  const dragStartYRef = useRef(0)
+  const dragStartScrollTopRef = useRef(0)
+  const lastYRef = useRef(0)
+  const lastTimeRef = useRef(0)
+  const velocityRef = useRef(0)
   const scrollTimeout = useRef<number | null>(null)
 
   useEffect(() => {
-    if (isUserScrolling.current) return
+    if (isDraggingRef.current) return
     const index = items.indexOf(value)
     if (index >= 0 && containerRef.current) {
-      containerRef.current.scrollTop = index * itemHeight
+      const target = index * itemHeight
+      if (Math.abs(containerRef.current.scrollTop - target) > 1) {
+        containerRef.current.scrollTo({
+          top: target,
+          behavior: "smooth",
+        })
+      }
     }
   }, [value, items, itemHeight])
 
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return
+    isDraggingRef.current = true
+    hasMovedRef.current = false
+    dragStartYRef.current = e.clientY
+    dragStartScrollTopRef.current = containerRef.current
+      ? containerRef.current.scrollTop
+      : 0
+    lastYRef.current = e.clientY
+    lastTimeRef.current = performance.now()
+    velocityRef.current = 0
+    setIsDragging(true)
+
+    if (containerRef.current) {
+      containerRef.current.style.scrollSnapType = "none"
+      try {
+        containerRef.current.setPointerCapture(e.pointerId)
+      } catch {}
+    }
+  }
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current || !containerRef.current) return
+    const deltaY = e.clientY - dragStartYRef.current
+    if (Math.abs(deltaY) > 3) {
+      hasMovedRef.current = true
+    }
+
+    const now = performance.now()
+    const dt = now - lastTimeRef.current
+    if (dt >= 8) {
+      const dy = e.clientY - lastYRef.current
+      const instantVelocity = Math.max(-2, Math.min(2, dy / dt))
+      velocityRef.current = 0.6 * instantVelocity + 0.4 * velocityRef.current
+      lastYRef.current = e.clientY
+      lastTimeRef.current = now
+    }
+
+    const maxScroll = (items.length - 1) * itemHeight
+    let newScrollTop = dragStartScrollTopRef.current - deltaY
+    if (newScrollTop < 0) {
+      newScrollTop = newScrollTop * 0.35
+    } else if (newScrollTop > maxScroll) {
+      newScrollTop = maxScroll + (newScrollTop - maxScroll) * 0.35
+    }
+
+    containerRef.current.scrollTop = newScrollTop
+
+    const activeIdx = Math.max(
+      0,
+      Math.min(items.length - 1, Math.round(newScrollTop / itemHeight)),
+    )
+    const activeItem = items[activeIdx]
+    if (activeItem !== undefined && activeItem !== value) {
+      onChange(activeItem)
+    }
+  }
+
+  const finishDrag = (pointerId?: number) => {
+    if (!isDraggingRef.current) return
+    isDraggingRef.current = false
+    setIsDragging(false)
+
+    if (containerRef.current) {
+      containerRef.current.style.scrollSnapType = "y mandatory"
+      if (pointerId !== undefined) {
+        try {
+          containerRef.current.releasePointerCapture(pointerId)
+        } catch {}
+      }
+
+      if (hasMovedRef.current) {
+        const momentumDistance = Math.max(
+          -itemHeight * 2,
+          Math.min(itemHeight * 2, velocityRef.current * 40),
+        )
+        const targetScroll = containerRef.current.scrollTop - momentumDistance
+        const snapIndex = Math.max(
+          0,
+          Math.min(items.length - 1, Math.round(targetScroll / itemHeight)),
+        )
+        const finalScrollTop = snapIndex * itemHeight
+        containerRef.current.scrollTo({
+          top: finalScrollTop,
+          behavior: "smooth",
+        })
+        onChange(items[snapIndex])
+        setTimeout(() => {
+          hasMovedRef.current = false
+        }, 60)
+      }
+    }
+  }
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    finishDrag(e.pointerId)
+  }
+
+  const handlePointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
+    finishDrag(e.pointerId)
+  }
+
   const handleScroll = () => {
-    if (!containerRef.current) return
-    isUserScrolling.current = true
+    if (isDraggingRef.current || !containerRef.current) return
     if (scrollTimeout.current) clearTimeout(scrollTimeout.current)
 
     scrollTimeout.current = window.setTimeout(() => {
-      if (!containerRef.current) return
+      if (!containerRef.current || isDraggingRef.current) return
       const scrollTop = containerRef.current.scrollTop
       const selectedIndex = Math.round(scrollTop / itemHeight)
-      const clampedIndex = Math.max(0, Math.min(items.length - 1, selectedIndex))
+      const clampedIndex = Math.max(
+        0,
+        Math.min(items.length - 1, selectedIndex),
+      )
       const selectedItem = items[clampedIndex]
-      if (selectedItem !== value) {
+      if (selectedItem !== undefined && selectedItem !== value) {
         onChange(selectedItem)
       }
-      isUserScrolling.current = false
-    }, 50)
+    }, 40)
   }
 
   return (
     <div
       ref={containerRef}
       onScroll={handleScroll}
-      className="time-picker-wheel-col"
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
+      className={`time-picker-wheel-col ${isDragging ? "is-dragging" : ""}`}
       style={{
         height: itemHeight * 5,
         overflowY: "auto",
@@ -4643,6 +4763,9 @@ function WheelColumn<T extends string | number>({
         scrollbarWidth: "none",
         paddingTop: itemHeight * 2,
         paddingBottom: itemHeight * 2,
+        touchAction: "none",
+        userSelect: "none",
+        WebkitUserSelect: "none",
       }}
     >
       {items.map((item) => {
@@ -4656,7 +4779,12 @@ function WheelColumn<T extends string | number>({
         return (
           <div
             key={String(item)}
-            onClick={() => {
+            onClick={(e) => {
+              if (hasMovedRef.current) {
+                e.preventDefault()
+                e.stopPropagation()
+                return
+              }
               onChange(item)
               if (containerRef.current) {
                 const idx = items.indexOf(item)
@@ -4673,11 +4801,13 @@ function WheelColumn<T extends string | number>({
               alignItems: "center",
               justifyContent: "center",
               scrollSnapAlign: "center",
-              cursor: "pointer",
+              cursor: isDragging ? "grabbing" : "pointer",
               fontSize: isSelected ? 21 : 16,
               fontWeight: isSelected ? 700 : 400,
               opacity: isSelected ? 1 : 0.35,
               transition: "all 0.12s ease",
+              userSelect: "none",
+              WebkitUserSelect: "none",
             }}
           >
             {displayLabel}
@@ -4714,12 +4844,51 @@ function TimePickerDrawer({
   const [minute, setMinute] = useState<number>(initial.minute)
   const [period, setPeriod] = useState<"AM" | "PM">(initial.period)
 
+  const prevHourRef = useRef<number>(initial.hour)
+  const prevMinuteRef = useRef<number>(initial.minute)
+
   useEffect(() => {
     const p = parseTimeString(stop.time)
     setHour(p.hour)
     setMinute(p.minute)
     setPeriod(p.period)
+    prevHourRef.current = p.hour
+    prevMinuteRef.current = p.minute
   }, [stop.time])
+
+  const handleHourChange = (newHour: number) => {
+    const prevHour = prevHourRef.current
+    setHour(newHour)
+
+    // AM/PM automatic update when touching 12:00PM or 12:00AM
+    // 1) Crossing forward into 12 from 11 (or morning/evening hours >= 8):
+    if (newHour === 12 && prevHour !== 12) {
+      if (prevHour === 11 || (prevHour >= 8 && prevHour <= 11)) {
+        if (period === "AM") {
+          setPeriod("PM")
+        } else if (period === "PM") {
+          setPeriod("AM")
+        }
+      }
+    }
+    // 2) Crossing backward from 12 into 11 (or earlier hours >= 8):
+    else if (prevHour === 12 && newHour !== 12) {
+      if (newHour === 11 || (newHour >= 8 && newHour <= 11)) {
+        if (period === "PM") {
+          setPeriod("AM")
+        } else if (period === "AM") {
+          setPeriod("PM")
+        }
+      }
+    }
+
+    prevHourRef.current = newHour
+  }
+
+  const handleMinuteChange = (newMinute: number) => {
+    setMinute(newMinute)
+    prevMinuteRef.current = newMinute
+  }
 
   const selectedMinutes = useMemo(
     () => timeToMinutes(hour, minute, period),
@@ -4816,13 +4985,13 @@ function TimePickerDrawer({
             <WheelColumn
               items={HOURS_LIST}
               value={hour}
-              onChange={setHour}
+              onChange={handleHourChange}
               itemHeight={38}
             />
             <WheelColumn
               items={MINUTES_LIST}
               value={minute}
-              onChange={setMinute}
+              onChange={handleMinuteChange}
               itemHeight={38}
             />
             <WheelColumn
