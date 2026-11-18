@@ -611,6 +611,7 @@ body.figma-device-mode {
 .option-type{color:#a8c7fa;font-size:9px}.option-number{color:#9aa0a6;font-weight:600}.option-title-row{gap:14px;margin-top:9px;align-items:center}.option-title-row>div{min-width:0;flex:1}.option-title-row b{color:#f5f7f7;font-size:16px;font-weight:700;letter-spacing:-.01em}.option-title-row small{margin-top:4px;color:#c4c7c5;font-size:10px;line-height:1.35}
 .route-mode-icon{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:#303435;color:#a7f3e6}
 .option-pill>p{margin:10px 0 0;color:#c4c7c5;font-size:11px;line-height:1.5}
+.option-saved-note{margin-top:9px;font-size:11px;line-height:1.45;color:#a8c7fa;font-weight:700}
 .route-summary{min-height:30px;margin-top:11px;display:flex;align-items:center;gap:7px;color:#e8eaed}.route-mode-label{font-size:10px;font-weight:600}.route-summary strong{margin-left:auto;font-size:13px;color:#fff}.transit-badge{min-width:30px;height:23px;padding:0 7px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;color:#fff;font-size:10px;font-weight:800;letter-spacing:.02em}.transit-badge.bus{background:#25b943}.transit-badge.downtown{background:#0b66d2}.transit-badge.thomson{background:#9d5b25}
 .selection-check{width:22px;height:22px;display:grid;place-items:center;border:1px solid #5f6368;border-radius:50%;color:transparent}.option-pill.selected .selection-check{border-color:#00e6b8;background:#00e6b8;color:#062a25}
 .bounce-action-bar{position:absolute;right:0;bottom:0;left:0;padding:12px 18px max(18px,env(safe-area-inset-bottom));background:linear-gradient(180deg,#15171800,#151718 20%);box-shadow:0 -8px 20px #0005}
@@ -695,6 +696,7 @@ body.figma-device-mode {
 .theme-light .option-title-row small{color:#5f6368;font-size:11px}
 .theme-light .route-mode-icon{background:#e6f4ea;color:#00796b}
 .theme-light .option-pill>p{color:#3c4043;font-size:11px}
+.theme-light .option-saved-note{color:#0b57d0}
 .theme-light .route-summary{color:#202124}
 .theme-light .route-summary strong{color:#202124;font-size:13px;font-weight:700}
 .theme-light .selection-check{border:2px solid #dadce0;background:transparent;color:transparent}

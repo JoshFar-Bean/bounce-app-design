@@ -6767,6 +6767,23 @@ function BounceScreen({
                         </span>
                       </div>
                       <p>{option.detail}</p>
+                      {option.type === "NEARBY ALTERNATIVE" && (
+                        <div className="option-saved-note">
+                          <b>
+                            This is a Saved Place from your{" "}
+                            <span style={{ fontStyle: "normal" }}>🤤</span>{" "}
+                            <i
+                              style={{
+                                fontStyle: "italic",
+                                marginRight: "3px",
+                              }}
+                            >
+                              Food places to explore
+                            </i>{" "}
+                            List
+                          </b>
+                        </div>
+                      )}
                       <div className="route-summary">
                         <span className="route-mode-label">{route.label}</span>
                         {route.badge && (
