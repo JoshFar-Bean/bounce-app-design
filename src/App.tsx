@@ -2922,6 +2922,8 @@ function getRouteDetail(
       return { icon: "bus", title: "Bus 80", detail: "4 stops · 16 min" }
     case "boat-quay->maxwell":
       return { icon: "walk", title: "Walk", detail: "600 m · 8 min" }
+    case "maxwell->boat-quay":
+      return { icon: "bus", title: "Bus 80", detail: "4 stops · 16 min" }
     case "maxwell->kobashi":
       return { icon: "walk", title: "Walk", detail: "350 m · 4 min" }
     case "kobashi->loulouca":
@@ -2985,6 +2987,15 @@ type SwipeableTimelineRowProps = {
   onSearch?: () => void
   isTimeAdjustable?: boolean
   onTimeClick?: () => void
+  isDraggable?: boolean
+  isFloating?: boolean
+  isGliding?: boolean
+  cardRef?: (el: HTMLDivElement | null) => void
+  cardStyle?: React.CSSProperties
+  onDragStart?: (startY: number) => void
+  onDragMove?: (clientY: number) => void
+  onDragEnd?: () => void
+  onDragCancel?: () => void
 }
 
 function SwipeableTimelineRow({
@@ -3004,6 +3015,15 @@ function SwipeableTimelineRow({
   onSearch,
   isTimeAdjustable = false,
   onTimeClick,
+  isDraggable = false,
+  isFloating = false,
+  isGliding = false,
+  cardRef,
+  cardStyle,
+  onDragStart,
+  onDragMove,
+  onDragEnd,
+  onDragCancel,
 }: SwipeableTimelineRowProps) {
   const [offsetX, setOffsetX] = useState(0)
   const isDragging = useRef(false)
@@ -3011,6 +3031,8 @@ function SwipeableTimelineRow({
   const startY = useRef(0)
   const hasLockedDirection = useRef(false)
   const isHorizontalDrag = useRef(false)
+  const isVerticalDrag = useRef(false)
+  const justDragged = useRef(false)
   const currentOffset = useRef(0)
 
   const isReplacedLocation = Boolean(
@@ -3040,12 +3062,13 @@ function SwipeableTimelineRow({
   }, [isOpen, openOffset])
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    if (!isRemovable) return
+    if (!isRemovable && !isDraggable) return
     isDragging.current = true
     startX.current = e.clientX
     startY.current = e.clientY
     hasLockedDirection.current = false
     isHorizontalDrag.current = false
+    isVerticalDrag.current = false
     try {
       ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
     } catch {}
@@ -3057,13 +3080,31 @@ function SwipeableTimelineRow({
     const diffY = e.clientY - startY.current
 
     if (!hasLockedDirection.current) {
-      if (Math.abs(diffX) > 6 || Math.abs(diffY) > 6) {
+      if (Math.abs(diffX) > 5 || Math.abs(diffY) > 5) {
         hasLockedDirection.current = true
-        isHorizontalDrag.current = Math.abs(diffX) > Math.abs(diffY)
+        if (Math.abs(diffX) > Math.abs(diffY)) {
+          if (isRemovable) {
+            isHorizontalDrag.current = true
+            isVerticalDrag.current = false
+          }
+        } else {
+          if (isDraggable) {
+            isVerticalDrag.current = true
+            isHorizontalDrag.current = false
+            justDragged.current = true
+            onDragStart?.(startY.current)
+          }
+        }
       }
     }
 
+    if (isVerticalDrag.current) {
+      onDragMove?.(e.clientY)
+      return
+    }
+
     if (!isHorizontalDrag.current) return
+    justDragged.current = true
 
     const base = isOpen ? openOffset : 0
     let target = base + diffX
@@ -3085,16 +3126,34 @@ function SwipeableTimelineRow({
       ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
     } catch {}
 
+    if (isVerticalDrag.current) {
+      isVerticalDrag.current = false
+      setTimeout(() => {
+        justDragged.current = false
+      }, 100)
+      onDragEnd?.()
+      return
+    }
+
     if (!isHorizontalDrag.current) {
       if (isOpen) {
         onClose()
         setOffsetX(0)
         currentOffset.current = 0
       } else {
-        onPlace()
+        if (!justDragged.current) {
+          onPlace()
+        }
       }
+      setTimeout(() => {
+        justDragged.current = false
+      }, 100)
       return
     }
+
+    setTimeout(() => {
+      justDragged.current = false
+    }, 100)
 
     const finalOffset = currentOffset.current
     if (finalOffset < deleteThreshold) {
@@ -3127,9 +3186,16 @@ function SwipeableTimelineRow({
 
   const handlePointerCancel = () => {
     isDragging.current = false
+    if (isVerticalDrag.current) {
+      isVerticalDrag.current = false
+      onDragCancel?.()
+    }
     const target = isOpen ? openOffset : 0
     setOffsetX(target)
     currentOffset.current = target
+    setTimeout(() => {
+      justDragged.current = false
+    }, 100)
   }
 
   return (
@@ -3150,7 +3216,13 @@ function SwipeableTimelineRow({
       </span>
       <i className="timeline-dot" />
 
-      <div className="timeline-card-col">
+      <div
+        className={`timeline-card-col ${isDraggable ? "is-draggable" : ""} ${
+          isFloating ? "is-floating" : ""
+        } ${isGliding ? "is-gliding" : ""}`}
+        ref={cardRef}
+        style={cardStyle}
+      >
         {isRemovable ? (
           <div className="swipeable-pill-container">
             <div
@@ -3222,8 +3294,12 @@ function SwipeableTimelineRow({
                 transition: isDragging.current
                   ? "none"
                   : "transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)",
-                touchAction: "pan-y",
-                cursor: "grab",
+                touchAction: isDraggable ? "none" : "pan-y",
+                cursor: isDraggable
+                  ? isFloating
+                    ? "grabbing"
+                    : "grab"
+                  : "pointer",
               }}
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
@@ -4818,6 +4894,7 @@ function PlanScreen({
   onBounce,
   onSearch,
   onUpdateTime,
+  onReorderStops,
 }: {
   stops: TimelineStop[]
   theme: Theme
@@ -4837,6 +4914,7 @@ function PlanScreen({
   onBounce?: (stop: TimelineStop) => void
   onSearch?: (stop: TimelineStop) => void
   onUpdateTime?: (stopId: string, newTime: string) => void
+  onReorderStops?: (newStops: TimelineStop[]) => void
 }) {
   const currentRef = useRef<HTMLDivElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -4848,6 +4926,221 @@ function PlanScreen({
     stop: TimelineStop
     index: number
   } | null>(null)
+
+  // Drag and drop state for future locations ONLY
+  const [draggedStopId, setDraggedStopId] = useState<string | null>(null)
+  const [dragDeltaY, setDragDeltaY] = useState(0)
+  const [hoverSlotIndex, setHoverSlotIndex] = useState<number | null>(null)
+  const [isSettling, setIsSettling] = useState(false)
+  const [settleDeltaY, setSettleDeltaY] = useState(0)
+
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const slotRectsRef = useRef<
+    Array<{ top: number; height: number; center: number }>
+  >([])
+  const initialSlotIndexRef = useRef(0)
+  const hoverSlotIndexRef = useRef(0)
+  const originalSlotTimesRef = useRef<string[]>([])
+  const isDraggingStopRef = useRef(false)
+  const dragStartClientY = useRef(0)
+
+  const handleStartDrag = (stopId: string, startY: number) => {
+    setExpandedAddStopId(null)
+    setSwipedStopId(null)
+
+    const future = stops.filter((s) => !s.past && !s.current)
+    const initialIndex = future.findIndex((s) => s.id === stopId)
+    if (initialIndex === -1) return
+
+    const rects: Array<{ top: number; height: number; center: number }> = []
+    future.forEach((s) => {
+      const el = cardRefs.current[s.id]
+      if (el) {
+        const r = el.getBoundingClientRect()
+        rects.push({
+          top: r.top,
+          height: r.height,
+          center: r.top + r.height / 2,
+        })
+      } else {
+        rects.push({ top: 0, height: 0, center: 0 })
+      }
+    })
+
+    slotRectsRef.current = rects
+    initialSlotIndexRef.current = initialIndex
+    hoverSlotIndexRef.current = initialIndex
+    originalSlotTimesRef.current = future.map((s) => s.time)
+    dragStartClientY.current = startY
+    isDraggingStopRef.current = true
+
+    setDraggedStopId(stopId)
+    setDragDeltaY(0)
+    setHoverSlotIndex(initialIndex)
+    setIsSettling(false)
+    setSettleDeltaY(0)
+  }
+
+  const handleMoveDrag = (clientY: number) => {
+    if (!isDraggingStopRef.current) return
+    const rawDiffY = clientY - dragStartClientY.current
+    const rects = slotRectsRef.current
+    const initialIndex = initialSlotIndexRef.current
+    const futureCount = rects.length
+    if (futureCount === 0) return
+
+    if (scrollContainerRef.current) {
+      const containerRect = scrollContainerRef.current.getBoundingClientRect()
+      if (clientY < containerRect.top + 50) {
+        scrollContainerRef.current.scrollBy({ top: -6, behavior: "auto" })
+      } else if (clientY > containerRect.bottom - 50) {
+        scrollContainerRef.current.scrollBy({ top: 6, behavior: "auto" })
+      }
+    }
+
+    const minDiff = rects[0].top - rects[initialIndex].top - 20
+    const maxDiff = rects[futureCount - 1].top - rects[initialIndex].top + 20
+    let clamped = rawDiffY
+    if (clamped < minDiff) {
+      clamped = minDiff + (clamped - minDiff) * 0.2
+    } else if (clamped > maxDiff) {
+      clamped = maxDiff + (clamped - maxDiff) * 0.2
+    }
+    setDragDeltaY(clamped)
+
+    const draggedCenter = rects[initialIndex].center + clamped
+
+    let newHover = initialIndex
+    if (clamped > 0) {
+      for (let k = initialIndex + 1; k < futureCount; k++) {
+        if (draggedCenter > rects[k].center) {
+          newHover = k
+        }
+      }
+    } else if (clamped < 0) {
+      for (let k = initialIndex - 1; k >= 0; k--) {
+        if (draggedCenter < rects[k].center) {
+          newHover = k
+        }
+      }
+    }
+
+    if (newHover !== hoverSlotIndexRef.current) {
+      hoverSlotIndexRef.current = newHover
+      setHoverSlotIndex(newHover)
+    }
+  }
+
+  const handleEndDrag = () => {
+    if (!isDraggingStopRef.current) return
+    isDraggingStopRef.current = false
+
+    const rects = slotRectsRef.current
+    const initialIndex = initialSlotIndexRef.current
+    const targetIndex = hoverSlotIndexRef.current
+    const future = stops.filter((s) => !s.past && !s.current)
+
+    if (
+      targetIndex !== initialIndex &&
+      rects[targetIndex] &&
+      rects[initialIndex]
+    ) {
+      const targetDeltaY = rects[targetIndex].top - rects[initialIndex].top
+      setSettleDeltaY(targetDeltaY)
+      setIsSettling(true)
+
+      setTimeout(() => {
+        const reordered = [...future]
+        const [moved] = reordered.splice(initialIndex, 1)
+        reordered.splice(targetIndex, 0, moved)
+
+        // Assign the timing of that specific space
+        const times = originalSlotTimesRef.current
+        const updatedFuture = reordered.map((stop, i) => ({
+          ...stop,
+          time: times[i] || stop.time,
+        }))
+
+        const startIdx = stops.findIndex((s) => !s.past && !s.current)
+        const nextStops = [...stops]
+        nextStops.splice(startIdx, updatedFuture.length, ...updatedFuture)
+
+        onReorderStops?.(nextStops)
+
+        setDraggedStopId(null)
+        setDragDeltaY(0)
+        setHoverSlotIndex(null)
+        setIsSettling(false)
+        setSettleDeltaY(0)
+      }, 220)
+    } else {
+      setSettleDeltaY(0)
+      setIsSettling(true)
+      setTimeout(() => {
+        setDraggedStopId(null)
+        setDragDeltaY(0)
+        setHoverSlotIndex(null)
+        setIsSettling(false)
+        setSettleDeltaY(0)
+      }, 200)
+    }
+  }
+
+  const handleCancelDrag = () => {
+    if (!isDraggingStopRef.current) return
+    isDraggingStopRef.current = false
+    setDraggedStopId(null)
+    setDragDeltaY(0)
+    setHoverSlotIndex(null)
+    setIsSettling(false)
+    setSettleDeltaY(0)
+  }
+
+  const getCardStyle = (
+    stopId: string,
+    futureIndex: number,
+  ): React.CSSProperties | undefined => {
+    if (!draggedStopId) return undefined
+
+    const rects = slotRectsRef.current
+    const initialIndex = initialSlotIndexRef.current
+    const targetIndex = hoverSlotIndex ?? initialIndex
+
+    if (stopId === draggedStopId) {
+      const currentY = isSettling ? settleDeltaY : dragDeltaY
+      return {
+        transform: `translate3d(0, ${currentY}px, 0) scale(1.025)`,
+        zIndex: 100,
+        transition: isSettling
+          ? "transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1)"
+          : "none",
+      }
+    }
+
+    if (rects.length === 0) return undefined
+
+    let glideY = 0
+    if (targetIndex > initialIndex) {
+      if (futureIndex > initialIndex && futureIndex <= targetIndex) {
+        const prevTop = rects[futureIndex - 1]?.top ?? 0
+        const currentTop = rects[futureIndex]?.top ?? 0
+        glideY = -(currentTop - prevTop)
+      }
+    } else if (targetIndex < initialIndex) {
+      if (futureIndex >= targetIndex && futureIndex < initialIndex) {
+        const nextTop = rects[futureIndex + 1]?.top ?? 0
+        const currentTop = rects[futureIndex]?.top ?? 0
+        glideY = +(nextTop - currentTop)
+      }
+    }
+
+    return {
+      transform:
+        glideY !== 0 ? `translate3d(0, ${glideY}px, 0)` : "translate3d(0, 0, 0)",
+      transition: "transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1)",
+      zIndex: 1,
+    }
+  }
   const [mapExpanded, setMapExpanded] = useState(
     new URLSearchParams(window.location.search).get("expanded") === "1",
   )
@@ -5247,12 +5540,41 @@ function PlanScreen({
                 const isRemovable = true
                 const currentIdx = stops.findIndex((s) => s.current)
                 const isTimeAdjustable = currentIdx !== -1 && index > currentIdx
+                const isDraggable =
+                  currentIdx !== -1 &&
+                  index > currentIdx &&
+                  !stop.past &&
+                  !stop.current
+                const futureIndex = isDraggable
+                  ? index - (currentIdx + 1)
+                  : -1
+                const isFloating = stop.id === draggedStopId
+                const isGliding = Boolean(
+                  draggedStopId && stop.id !== draggedStopId && isDraggable,
+                )
+                const cardStyle = isDraggable
+                  ? getCardStyle(stop.id, futureIndex)
+                  : undefined
+
                 return (
                   <div className="timeline-stop-group" key={stop.id}>
                     <SwipeableTimelineRow
                       stop={stop}
                       currentRef={stop.current ? currentRef : undefined}
                       isRemovable={isRemovable}
+                      isDraggable={isDraggable}
+                      isFloating={isFloating}
+                      isGliding={isGliding}
+                      cardRef={(el) => {
+                        cardRefs.current[stop.id] = el
+                      }}
+                      cardStyle={cardStyle}
+                      onDragStart={(startY) =>
+                        handleStartDrag(stop.id, startY)
+                      }
+                      onDragMove={handleMoveDrag}
+                      onDragEnd={handleEndDrag}
+                      onDragCancel={handleCancelDrag}
                       isTimeAdjustable={isTimeAdjustable}
                       onTimeClick={() =>
                         setEditingTimeStop({ stop, index })
@@ -5262,7 +5584,7 @@ function PlanScreen({
                       onClose={() => {
                         if (swipedStopId === stop.id) setSwipedStopId(null)
                       }}
-                      onDelete={() => onDeleteStop?.(stop.id)}
+                      onDelete={() => handleDeleteStop(stop.id)}
                       onUndo={() => {
                         setSwipedStopId(null)
                         onUndoStop?.(stop.id)
@@ -6902,6 +7224,38 @@ function App() {
   const [screen, setScreen] = useState<Screen>(initialScreen)
   const [routeSearchTargetStop, setRouteSearchTargetStop] = useState<TimelineStop | null>(null)
   const [planStops, setPlanStops] = useState<TimelineStop[]>(() => {
+    const isMaxwellPreset =
+      new URLSearchParams(window.location.search).get("preset") === "maxwell" ||
+      new URLSearchParams(window.location.search).get("demo") === "1" ||
+      new URLSearchParams(window.location.search).get("multi") === "2"
+    if (isMaxwellPreset) {
+      const stops = [...initialStops]
+      const idx = stops.findIndex((s) => s.id === "kobashi")
+      if (idx >= 0) {
+        stops.splice(
+          idx + 1,
+          0,
+          {
+            id: "bounce-maxwell",
+            time: "1:45 pm",
+            title: "Maxwell Food Centre",
+            meta: "Bounce addition · Nearby now",
+            changed: true,
+            bounceSource: "kobashi",
+          },
+          {
+            id: "place-boat-quay",
+            time: "2:35 pm",
+            title: "Boat Quay",
+            meta: "Historic riverfront · Singapore River",
+            changed: true,
+            bounceSource: "kobashi",
+          },
+        )
+        return recalculateStopTimes(stops)
+      }
+    }
+
     const isMulti =
       new URLSearchParams(window.location.search).get("multi") === "1"
     const isReplaceParam =
@@ -7355,6 +7709,10 @@ function App() {
       prev.map((s) => (s.id === stopId ? { ...s, time: newTime } : s)),
     )
   }
+
+  const handleReorderStops = (nextStops: TimelineStop[]) => {
+    setPlanStops(nextStops)
+  }
   const revertSelectedStop = () => {
     if (!selectedStop.originalTitle || !selectedStop.originalMeta) return
     const next = planStops.map((stop) =>
@@ -7666,6 +8024,7 @@ function App() {
                       setScreen("search-along-route")
                     }}
                     onUpdateTime={handleUpdateStopTime}
+                    onReorderStops={handleReorderStops}
                   />
                 </div>
               )}
@@ -7794,6 +8153,7 @@ function App() {
                       setScreen("search-along-route")
                     }}
                     onUpdateTime={handleUpdateStopTime}
+                    onReorderStops={handleReorderStops}
                   />
                 </div>
               )}

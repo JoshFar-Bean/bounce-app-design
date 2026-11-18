@@ -1747,3 +1747,49 @@ body.figma-device-mode {
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
 }
+
+/* Drag and Drop Future Locations */
+.timeline-card-col.is-draggable .time-pill {
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.timeline-card-col.is-draggable .time-pill:active {
+  cursor: grabbing;
+}
+
+.timeline-card-col.is-floating {
+  z-index: 100 !important;
+  pointer-events: none;
+  position: relative;
+}
+
+.timeline-card-col.is-floating .time-pill {
+  cursor: grabbing !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.22), 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 121, 107, 0.4);
+}
+
+.theme-dark .timeline-card-col.is-floating .time-pill,
+.timeline-card-col.is-floating.theme-dark .time-pill {
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.65), 0 4px 14px rgba(0, 0, 0, 0.45);
+  border-color: rgba(0, 230, 184, 0.4);
+}
+
+.timeline-card-col.is-floating .timeline-connected-plus-btn {
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
+}
+.theme-dark .timeline-card-col.is-floating .timeline-connected-plus-btn,
+.timeline-card-col.is-floating.theme-dark .timeline-connected-plus-btn {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+}
+
+.timeline-card-col.is-gliding {
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  position: relative;
+}
+
+.timeline-card-col.is-settling {
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+  position: relative;
+}
