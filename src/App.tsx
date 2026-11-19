@@ -7425,13 +7425,13 @@ function App() {
       : null
 
   const initialPrototype: "light" | "dark" =
-    prototypeParam === "dark" || themeParam === "dark"
-      ? "dark"
-      : prototypeParam === "light" || themeParam === "light"
-        ? "light"
-        : savedPrototype === "dark"
-          ? "dark"
-          : "light"
+    prototypeParam === "light" || themeParam === "light"
+      ? "light"
+      : prototypeParam === "dark" || themeParam === "dark"
+        ? "dark"
+        : savedPrototype === "light"
+          ? "light"
+          : "dark"
 
   const [prototypeMode, setPrototypeMode] = useState<"light" | "dark">(
     initialPrototype,

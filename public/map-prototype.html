@@ -628,7 +628,7 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const initialThemeParam = urlParams.get('theme');
-    let isNightMode = initialThemeParam === 'dark';
+    let isNightMode = initialThemeParam !== 'light';
 
     if (!isNightMode) {
       document.body.classList.add('theme-light');
