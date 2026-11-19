@@ -3230,6 +3230,7 @@ function SwipeableTimelineRow({
               style={{
                 opacity: offsetX < 0 ? 1 : 0,
                 visibility: offsetX < 0 ? "visible" : "hidden",
+                pointerEvents: offsetX < 0 ? "auto" : "none",
               }}
             >
               {hasUndo && (
@@ -3237,6 +3238,9 @@ function SwipeableTimelineRow({
                   type="button"
                   className="swipe-undo-action"
                   onPointerDown={(e) => e.stopPropagation()}
+                  onPointerUp={(e) => e.stopPropagation()}
+                  onTouchStart={(e) => e.stopPropagation()}
+                  onTouchEnd={(e) => e.stopPropagation()}
                   onClick={(e) => {
                     e.stopPropagation()
                     setOffsetX(0)
@@ -3268,6 +3272,9 @@ function SwipeableTimelineRow({
                 type="button"
                 className="swipe-delete-action"
                 onPointerDown={(e) => e.stopPropagation()}
+                onPointerUp={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+                onTouchEnd={(e) => e.stopPropagation()}
                 onClick={(e) => {
                   e.stopPropagation()
                   onDelete()
@@ -5753,7 +5760,10 @@ function PlanScreen({
                       onClose={() => {
                         if (swipedStopId === stop.id) setSwipedStopId(null)
                       }}
-                      onDelete={() => handleDeleteStop(stop.id)}
+                      onDelete={() => {
+                        setSwipedStopId(null)
+                        onDeleteStop?.(stop.id)
+                      }}
                       onUndo={() => {
                         setSwipedStopId(null)
                         onUndoStop?.(stop.id)
