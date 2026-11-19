@@ -608,18 +608,18 @@ function BackButton({
       style={{
         ...(theme === "light"
           ? {
-              background: "#ffffff",
-              color: "#202124",
-              border: "1px solid rgba(0,0,0,0.08)",
-              boxShadow: "0 3px 12px rgba(0,0,0,0.15)",
-            }
+            background: "#ffffff",
+            color: "#202124",
+            border: "1px solid rgba(0,0,0,0.08)",
+            boxShadow: "0 3px 12px rgba(0,0,0,0.15)",
+          }
           : theme === "dark"
             ? {
-                background: "#252628e8",
-                color: "#ffffff",
-                border: "1px solid rgba(255,255,255,0.08)",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
-              }
+              background: "#252628e8",
+              color: "#ffffff",
+              border: "1px solid rgba(255,255,255,0.08)",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+            }
             : {}),
         pointerEvents: "auto",
         ...style,
@@ -2470,9 +2470,8 @@ function ChatScreen({
         />
       )}
       <div
-        className={`chat-response-sheet ${mapExpanded ? "map-expanded" : ""} ${
-          isScrolled ? "scrolled-up" : ""
-        }`}
+        className={`chat-response-sheet ${mapExpanded ? "map-expanded" : ""} ${isScrolled ? "scrolled-up" : ""
+          }`}
       >
         <div className="chat-sheet-header">
           <div
@@ -2685,7 +2684,7 @@ function YouScreen({
         </section>
         <div className="scroll-spacer" />
       </div>
-      <BottomNav active="You" onYou={() => {}} onExplore={onExplore} />
+      <BottomNav active="You" onYou={() => { }} onExplore={onExplore} />
     </div>
   )
 }
@@ -2710,6 +2709,7 @@ type TimelineStop = {
   current?: boolean
   past?: boolean
   changed?: boolean
+  isNew?: boolean
   bounceSource?: string
   originalTitle?: string
   originalMeta?: string
@@ -3037,14 +3037,14 @@ function SwipeableTimelineRow({
 
   const isReplacedLocation = Boolean(
     stop.isReplacement ||
-      (stop.history && stop.history.length > 0) ||
-      Boolean(stop.originalTitle) ||
-      (stop.changed &&
-        Boolean(
-          stop.meta &&
-            (stop.meta.includes("Replaced") ||
-              stop.meta.includes("Bounce replacement")),
-        )),
+    (stop.history && stop.history.length > 0) ||
+    Boolean(stop.originalTitle) ||
+    (stop.changed &&
+      Boolean(
+        stop.meta &&
+        (stop.meta.includes("Replaced") ||
+          stop.meta.includes("Bounce replacement")),
+      )),
   )
   const hasUndo = Boolean(onUndo && isReplacedLocation)
   const openOffset = hasUndo ? -152 : -76
@@ -3070,8 +3070,8 @@ function SwipeableTimelineRow({
     isHorizontalDrag.current = false
     isVerticalDrag.current = false
     try {
-      ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-    } catch {}
+      ; (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+    } catch { }
   }
 
   const handlePointerMove = (e: React.PointerEvent) => {
@@ -3123,8 +3123,8 @@ function SwipeableTimelineRow({
     if (!isDragging.current) return
     isDragging.current = false
     try {
-      ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
-    } catch {}
+      ; (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
+    } catch { }
 
     if (isVerticalDrag.current) {
       isVerticalDrag.current = false
@@ -3200,9 +3200,8 @@ function SwipeableTimelineRow({
 
   return (
     <div
-      className={`timeline-row ${stop.current ? "current" : ""} ${
-        stop.past ? "past" : ""
-      } ${stop.changed ? "changed" : ""}`}
+      className={`timeline-row ${stop.current ? "current" : ""} ${stop.past ? "past" : ""
+        } ${stop.changed ? "changed" : ""}`}
       ref={currentRef}
     >
       <span
@@ -3217,9 +3216,8 @@ function SwipeableTimelineRow({
       <i className="timeline-dot" />
 
       <div
-        className={`timeline-card-col ${isDraggable ? "is-draggable" : ""} ${
-          isFloating ? "is-floating" : ""
-        } ${isGliding ? "is-gliding" : ""}`}
+        className={`timeline-card-col ${isDraggable ? "is-draggable" : ""} ${isFloating ? "is-floating" : ""
+          } ${isGliding ? "is-gliding" : ""}`}
         ref={cardRef}
         style={cardStyle}
       >
@@ -3339,9 +3337,8 @@ function SwipeableTimelineRow({
           <>
             <button
               type="button"
-              className={`timeline-connected-plus-btn ${
-                isAddExpanded ? "active" : ""
-              }`}
+              className={`timeline-connected-plus-btn ${isAddExpanded ? "active" : ""
+                }`}
               onClick={(e) => {
                 e.stopPropagation()
                 onToggleAdd?.()
@@ -3368,9 +3365,8 @@ function SwipeableTimelineRow({
             {/* Slide-Down Action Buttons ("Bounce" and "Search") */}
             <div
               ref={actionsRef}
-              className={`timeline-insert-actions ${
-                isAddExpanded ? "expanded" : "collapsed"
-              }`}
+              className={`timeline-insert-actions ${isAddExpanded ? "expanded" : "collapsed"
+                }`}
             >
               <button
                 type="button"
@@ -3593,9 +3589,8 @@ function CollapsedDrawerRoute({
                     <div className="dropup-info-col">
                       <div className="dropup-top-line">
                         <span
-                          className={`box-kicker ${
-                            opt.index === 1 ? "is-new-kicker" : "next-kicker"
-                          }`}
+                          className={`box-kicker ${opt.index === 1 ? "is-new-kicker" : "next-kicker"
+                            }`}
                         >
                           {opt.type}
                         </span>
@@ -3620,9 +3615,8 @@ function CollapsedDrawerRoute({
         >
           <div className="box-header">
             <span
-              className={`box-kicker ${
-                isNew ? "is-new-kicker" : "next-kicker"
-              }`}
+              className={`box-kicker ${isNew ? "is-new-kicker" : "next-kicker"
+                }`}
             >
               {toKicker}
             </span>
@@ -4650,7 +4644,7 @@ function WheelColumn<T extends string | number>({
       containerRef.current.style.scrollSnapType = "none"
       try {
         containerRef.current.setPointerCapture(e.pointerId)
-      } catch {}
+      } catch { }
     }
   }
 
@@ -4701,7 +4695,7 @@ function WheelColumn<T extends string | number>({
       if (pointerId !== undefined) {
         try {
           containerRef.current.releasePointerCapture(pointerId)
-        } catch {}
+        } catch { }
       }
 
       if (hasMovedRef.current) {
@@ -4954,9 +4948,8 @@ function TimePickerDrawer({
       <div className="time-picker-container">
         {/* Top Card: Picker + Confirm */}
         <div
-          className={`time-picker-card ${
-            theme === "dark" ? "theme-dark" : ""
-          }`}
+          className={`time-picker-card ${theme === "dark" ? "theme-dark" : ""
+            }`}
         >
           {/* Header Row */}
           <div className="time-picker-header">
@@ -5016,9 +5009,8 @@ function TimePickerDrawer({
           <button
             type="button"
             disabled={isExceeded}
-            className={`time-picker-action-btn confirm-btn ${
-              isExceeded ? "disabled" : ""
-            }`}
+            className={`time-picker-action-btn confirm-btn ${isExceeded ? "disabled" : ""
+              }`}
             onClick={() => {
               if (!isExceeded) {
                 const finalPaddedMin =
@@ -5034,9 +5026,8 @@ function TimePickerDrawer({
 
         {/* Bottom Card: Cancel Button */}
         <div
-          className={`time-picker-cancel-wrapper ${
-            theme === "dark" ? "theme-dark" : ""
-          }`}
+          className={`time-picker-cancel-wrapper ${theme === "dark" ? "theme-dark" : ""
+            }`}
         >
           <button
             type="button"
@@ -5376,7 +5367,7 @@ function PlanScreen({
       navigator.clipboard?.writeText(
         "https://maps.app.goo.gl/SingaporeFoodTrail",
       )
-    } catch {}
+    } catch { }
     const isShare = drawerMode === "share"
     setDrawerMode(null)
     setToastMessage(
@@ -5472,8 +5463,8 @@ function PlanScreen({
     dragStartY.current = e.clientY
     totalDragDistance.current = 0
     try {
-      ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-    } catch {}
+      ; (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+    } catch { }
   }
 
   const handlePointerMove = (e: React.PointerEvent) => {
@@ -5496,8 +5487,8 @@ function PlanScreen({
     if (!isDragging.current) return
     isDragging.current = false
     try {
-      ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
-    } catch {}
+      ; (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
+    } catch { }
 
     const dist = totalDragDistance.current
     setDragOffsetY(0)
@@ -5809,9 +5800,8 @@ function PlanScreen({
                         const isSelected = activeLeg === index
                         return (
                           <div
-                            className={`route-detail ${
-                              isSelected ? "selected-route" : ""
-                            }`}
+                            className={`route-detail ${isSelected ? "selected-route" : ""
+                              }`}
                             onClick={() => handleRouteClick(index)}
                             role="button"
                             tabIndex={0}
@@ -6122,9 +6112,8 @@ function RevisitSheet({
                         return (
                           <div
                             key={item.id}
-                            className={`revisit-dropup-item ${
-                              isSelected ? "selected" : ""
-                            }`}
+                            className={`revisit-dropup-item ${isSelected ? "selected" : ""
+                              }`}
                             role="option"
                             aria-selected={isSelected}
                             tabIndex={0}
@@ -6162,9 +6151,8 @@ function RevisitSheet({
 
                 <button
                   type="button"
-                  className={`revisit-dropdown-trigger ${
-                    isDropdownOpen ? "open" : ""
-                  }`}
+                  className={`revisit-dropdown-trigger ${isDropdownOpen ? "open" : ""
+                    }`}
                   onClick={(e) => {
                     e.stopPropagation()
                     setIsDropdownOpen(!isDropdownOpen)
@@ -6182,9 +6170,8 @@ function RevisitSheet({
                     )
                   </span>
                   <div
-                    className={`revisit-select-arrow ${
-                      isDropdownOpen ? "open" : ""
-                    }`}
+                    className={`revisit-select-arrow ${isDropdownOpen ? "open" : ""
+                      }`}
                     aria-hidden="true"
                   >
                     <Icon name="chevron" size={14} />
@@ -6499,8 +6486,8 @@ function BounceScreen({
     dragStartY.current = e.clientY
     totalDragDistance.current = 0
     try {
-      ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-    } catch {}
+      ; (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+    } catch { }
   }
 
   const handlePointerMove = (e: React.PointerEvent) => {
@@ -6523,8 +6510,8 @@ function BounceScreen({
     if (!isDragging.current) return
     isDragging.current = false
     try {
-      ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
-    } catch {}
+      ; (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
+    } catch { }
 
     const dist = totalDragDistance.current
     setDragOffsetY(0)
@@ -6757,9 +6744,8 @@ function BounceScreen({
                   return (
                     <Tap
                       label={`Select ${option.title}`}
-                      className={`option-pill option-${index} ${
-                        selectedOption === index ? "selected" : ""
-                      }`}
+                      className={`option-pill option-${index} ${selectedOption === index ? "selected" : ""
+                        }`}
                       onPress={() => onSelectOption(index)}
                       key={option.title}
                     >
@@ -6979,9 +6965,8 @@ function SearchAlongRouteScreen({
 
   return (
     <div
-      className={`screen-page search-along-route-page ${
-        theme === "light" ? "theme-light" : "theme-dark"
-      }`}
+      className={`screen-page search-along-route-page ${theme === "light" ? "theme-light" : "theme-dark"
+        }`}
     >
       {/* Top Header / Search Bar */}
       <div className="search-route-header">
@@ -7164,9 +7149,8 @@ function SearchAlongRouteScreen({
               {suggestions.map((item) => (
                 <div
                   key={item.id}
-                  className={`search-autofill-item ${
-                    item.isPrimary ? "primary" : ""
-                  }`}
+                  className={`search-autofill-item ${item.isPrimary ? "primary" : ""
+                    }`}
                   onClick={(e) => {
                     e.stopPropagation()
                     onSelectPlace(item.title, targetStop)
@@ -7194,9 +7178,8 @@ function SearchAlongRouteScreen({
 
       {/* iOS Keyboard Drawer (Search 1.jpeg vs Search 2.jpeg) */}
       <div
-        className={`ios-keyboard-drawer ${
-          isKeyboardOpen ? "drawer-open" : "drawer-closed"
-        }`}
+        className={`ios-keyboard-drawer ${isKeyboardOpen ? "drawer-open" : "drawer-closed"
+          }`}
       >
         <div
           className="keyboard-drag-handle"
@@ -7588,8 +7571,8 @@ function App() {
   const [selectedStop, setSelectedStop] = useState<TimelineStop>(
     requestedStop
       ? (initialStops.find((stop) =>
-          stop.title.toLowerCase().includes(requestedStop.toLowerCase()),
-        ) ?? initialStops[2])
+        stop.title.toLowerCase().includes(requestedStop.toLowerCase()),
+      ) ?? initialStops[2])
       : initialStops[2],
   )
   const iframeRef = useRef<HTMLIFrameElement>(null)
@@ -7641,7 +7624,7 @@ function App() {
       url.searchParams.set("prototype", mode)
       url.searchParams.set("theme", mode)
       window.history.replaceState({}, "", url.toString())
-    } catch {}
+    } catch { }
   }
 
   const highlightRouteLeg = (index: number) => {
@@ -7947,13 +7930,13 @@ function App() {
     const next = planStops.map((stop) =>
       stop.id === selectedStop.id
         ? {
-            ...stop,
-            title: selectedStop.originalTitle!,
-            meta: selectedStop.originalMeta!,
-            changed: false,
-            originalTitle: undefined,
-            originalMeta: undefined,
-          }
+          ...stop,
+          title: selectedStop.originalTitle!,
+          meta: selectedStop.originalMeta!,
+          changed: false,
+          originalTitle: undefined,
+          originalMeta: undefined,
+        }
         : stop,
     )
     setPlanStops(next)
@@ -8022,9 +8005,8 @@ function App() {
 
   return (
     <main
-      className={`app-shell ${
-        theme === "light" ? "light-shell" : "dark-shell"
-      } ${deviceMode === "figma" ? "figma-device-mode" : ""}`}
+      className={`app-shell ${theme === "light" ? "light-shell" : "dark-shell"
+        } ${deviceMode === "figma" ? "figma-device-mode" : ""}`}
     >
       {/* iPhone 18 Pro Black Chassis (flattened / full-bleed in Figma Make mode) */}
       <div className="iphone-pro-chassis">
@@ -8534,7 +8516,7 @@ function App() {
               setDeviceMode(nextMode)
               try {
                 window.sessionStorage?.setItem("bounce_device_mode", nextMode)
-              } catch {}
+              } catch { }
             }}
             style={{
               background: deviceMode === "figma" ? "#00796b" : "#2b3036",

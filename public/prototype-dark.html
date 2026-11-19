@@ -351,7 +351,7 @@
         </div>
 
         <!-- Embedded Interactive App Iframe (defaults to Dark Mode) -->
-        <iframe id="app-iframe" class="screen-viewport" src="http://localhost:8443/?screen=map&prototype=dark&theme=dark&frame=0"></iframe>
+        <iframe id="app-iframe" class="screen-viewport" src="/?screen=map&prototype=dark&theme=dark&frame=0"></iframe>
 
       </div>
 
@@ -448,8 +448,7 @@
     }
 
     function updateUrl() {
-      const base = window.location.port ? '' : 'http://localhost:8443';
-      let url = `${base}/?screen=${currentScreen}&prototype=dark&theme=${currentTheme}&frame=0`;
+      let url = `/?screen=${currentScreen}&prototype=dark&theme=${currentTheme}&frame=0`;
       if (isDrawerCollapsed) {
         url += '&collapsed=1';
       }
