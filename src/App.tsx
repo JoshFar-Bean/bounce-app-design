@@ -7412,11 +7412,32 @@ function App() {
   ].includes(requestedScreen ?? "")
     ? (requestedScreen as Screen)
     : "map"
-  const [theme, setTheme] = useState<Theme>(
-    new URLSearchParams(window.location.search).get("theme") === "light"
-      ? "light"
-      : "dark",
+  const searchParams =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search)
+      : new URLSearchParams()
+  const prototypeParam =
+    searchParams.get("prototype") || searchParams.get("default")
+  const themeParam = searchParams.get("theme")
+  const savedPrototype =
+    typeof window !== "undefined"
+      ? window.sessionStorage?.getItem("bounce_prototype_theme")
+      : null
+
+  const initialPrototype: "light" | "dark" =
+    prototypeParam === "dark" || themeParam === "dark"
+      ? "dark"
+      : prototypeParam === "light" || themeParam === "light"
+        ? "light"
+        : savedPrototype === "dark"
+          ? "dark"
+          : "light"
+
+  const [prototypeMode, setPrototypeMode] = useState<"light" | "dark">(
+    initialPrototype,
   )
+  const [theme, setTheme] = useState<Theme>(initialPrototype)
+  const initialMapTheme = useRef<Theme>(initialPrototype).current
   const [screen, setScreen] = useState<Screen>(initialScreen)
   const [routeSearchTargetStop, setRouteSearchTargetStop] = useState<TimelineStop | null>(null)
   const [planStops, setPlanStops] = useState<TimelineStop[]>(() => {
@@ -7610,6 +7631,18 @@ function App() {
     window.addEventListener("resize", handleResize)
     return () => window.removeEventListener("resize", handleResize)
   }, [])
+
+  const handleSelectPrototype = (mode: "light" | "dark") => {
+    setPrototypeMode(mode)
+    setTheme(mode)
+    try {
+      window.sessionStorage?.setItem("bounce_prototype_theme", mode)
+      const url = new URL(window.location.href)
+      url.searchParams.set("prototype", mode)
+      url.searchParams.set("theme", mode)
+      window.history.replaceState({}, "", url.toString())
+    } catch {}
+  }
 
   const highlightRouteLeg = (index: number) => {
     setSelectedLegIndex(index)
@@ -8035,7 +8068,28 @@ function App() {
             {/* 2. Global Background Map (Now strictly contained within the phone) */}
             <iframe
               ref={iframeRef}
-              src="/map-prototype.html"
+              src={`/map-prototype.html?theme=${initialMapTheme}`}
+              onLoad={() => {
+                if (iframeRef.current && iframeRef.current.contentWindow) {
+                  iframeRef.current.contentWindow.postMessage(
+                    { type: "THEME_TOGGLE", isDark: theme === "dark" },
+                    "*",
+                  )
+                  iframeRef.current.contentWindow.postMessage(
+                    {
+                      type: "SET_MODE",
+                      mode:
+                        screen === "plan" || screen === "updated"
+                          ? "itinerary"
+                          : screen === "bounce"
+                            ? "bounce"
+                            : "explore",
+                      stops: planStops,
+                    },
+                    "*",
+                  )
+                }
+              }}
               style={{
                 position: "absolute",
                 top: 0,
@@ -8377,7 +8431,7 @@ function App() {
         </div>
       </div>
 
-      {/* Localhost Preview Mode Switcher (Allows testing Figma Make Responsive Fit directly on localhost; hidden inside real iframe) */}
+      {/* Localhost Preview Mode & Prototype Switcher */}
       {!isRunningInIframe && (
         <div
           style={{
@@ -8387,8 +8441,8 @@ function App() {
             zIndex: 9999,
             display: "flex",
             alignItems: "center",
-            gap: 8,
-            background: "rgba(18, 22, 26, 0.92)",
+            gap: 10,
+            background: "rgba(18, 22, 26, 0.94)",
             backdropFilter: "blur(14px)",
             WebkitBackdropFilter: "blur(14px)",
             border: "1px solid rgba(255, 255, 255, 0.16)",
@@ -8401,8 +8455,77 @@ function App() {
             userSelect: "none",
           }}
         >
-          <span style={{ opacity: 0.8, fontWeight: 500, fontSize: 11.5 }}>
-            Preview:
+          {/* Prototype Selector */}
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <span style={{ opacity: 0.75, fontWeight: 500, fontSize: 11 }}>
+              Prototype:
+            </span>
+            <div
+              style={{
+                display: "inline-flex",
+                background: "rgba(0, 0, 0, 0.35)",
+                borderRadius: 999,
+                padding: 2,
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => handleSelectPrototype("light")}
+                style={{
+                  background:
+                    prototypeMode === "light" ? "#ffffff" : "transparent",
+                  color: prototypeMode === "light" ? "#1a202c" : "#9aa0a6",
+                  border: "none",
+                  borderRadius: 999,
+                  padding: "3px 8px",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  transition: "all 0.15s ease",
+                }}
+                title="Prototype 1: Default Light Mode (Dark mode optional)"
+              >
+                <span>☀️</span> Light
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSelectPrototype("dark")}
+                style={{
+                  background:
+                    prototypeMode === "dark" ? "#3c4043" : "transparent",
+                  color: prototypeMode === "dark" ? "#ffffff" : "#9aa0a6",
+                  border: "none",
+                  borderRadius: 999,
+                  padding: "3px 8px",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  transition: "all 0.15s ease",
+                }}
+                title="Prototype 2: Default Dark Mode (Light mode optional)"
+              >
+                <span>🌙</span> Dark
+              </button>
+            </div>
+          </div>
+
+          <div
+            style={{
+              width: 1,
+              height: 18,
+              background: "rgba(255, 255, 255, 0.15)",
+            }}
+          />
+
+          <span style={{ opacity: 0.75, fontWeight: 500, fontSize: 11 }}>
+            View:
           </span>
           <button
             type="button"

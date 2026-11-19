@@ -1,0 +1,7 @@
+node_modules
+dist
+dist-ssr
+*.local
+.DS_Store
+bounce_app_screenshots*
+presentation.html

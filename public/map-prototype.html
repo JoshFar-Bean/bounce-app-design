@@ -626,6 +626,14 @@
       return { lat: 1.28445, lng: 103.84475 };
     }
 
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialThemeParam = urlParams.get('theme');
+    let isNightMode = initialThemeParam === 'dark';
+
+    if (!isNightMode) {
+      document.body.classList.add('theme-light');
+    }
+
     const nightModeStyles = [
       { elementType: "geometry", stylers: [{ color: "#16212e" }] },
       { elementType: "labels.text.stroke", stylers: [{ color: "#16212e" }, { weight: 3 }] },
@@ -656,7 +664,7 @@
             isFractionalZoomEnabled: true,
             disableDefaultUI: true,
             gestureHandling: "greedy",
-            styles: nightModeStyles
+            styles: isNightMode ? nightModeStyles : []
           });
 
           // Overlay class for custom DOM elements
@@ -1911,11 +1919,11 @@
       }
 
       if (data.type === 'THEME_TOGGLE') {
-        const isDark = data.isDark;
+        isNightMode = Boolean(data.isDark);
         if (map) {
-          map.setOptions({ styles: isDark ? nightModeStyles : [] });
+          map.setOptions({ styles: isNightMode ? nightModeStyles : [] });
         }
-        document.body.classList.toggle('theme-light', !isDark);
+        document.body.classList.toggle('theme-light', !isNightMode);
       }
 
       if (data.type === 'SET_MODE') {
