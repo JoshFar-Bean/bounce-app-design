@@ -7380,21 +7380,27 @@ function App() {
   const requestedScreen = new URLSearchParams(window.location.search).get(
     "screen",
   )
-  const initialScreen: Screen = [
-    "map",
-    "ask",
-    "history",
-    "chat",
-    "saved",
-    "you",
-    "plan",
-    "place",
-    "bounce",
-    "updated",
-    "search-along-route",
-  ].includes(requestedScreen ?? "")
-    ? (requestedScreen as Screen)
-    : "map"
+  const isBoatPreset =
+    typeof window !== "undefined" &&
+    (new URLSearchParams(window.location.search).get("preset") === "boat" ||
+      new URLSearchParams(window.location.search).get("boat") === "1")
+  const initialScreen: Screen = isBoatPreset
+    ? "updated"
+    : [
+        "map",
+        "ask",
+        "history",
+        "chat",
+        "saved",
+        "you",
+        "plan",
+        "place",
+        "bounce",
+        "updated",
+        "search-along-route",
+      ].includes(requestedScreen ?? "")
+      ? (requestedScreen as Screen)
+      : "map"
   const searchParams =
     typeof window !== "undefined"
       ? new URLSearchParams(window.location.search)
@@ -7424,6 +7430,30 @@ function App() {
   const [screen, setScreen] = useState<Screen>(initialScreen)
   const [routeSearchTargetStop, setRouteSearchTargetStop] = useState<TimelineStop | null>(null)
   const [planStops, setPlanStops] = useState<TimelineStop[]>(() => {
+    const isBoatPreset =
+      new URLSearchParams(window.location.search).get("preset") === "boat" ||
+      new URLSearchParams(window.location.search).get("boat") === "1"
+    if (isBoatPreset) {
+      const stops = [...initialStops]
+      const idx = stops.findIndex((s) => s.id === "kobashi")
+      if (idx >= 0) {
+        stops.splice(
+          idx + 1,
+          0,
+          {
+            id: "place-boat-quay",
+            time: "1:45 pm",
+            title: "Boat Quay",
+            meta: "Historic riverfront · Singapore River",
+            changed: true,
+            isNew: true,
+            bounceSource: "search",
+          },
+        )
+        return recalculateStopTimes(stops)
+      }
+    }
+
     const isMaxwellPreset =
       new URLSearchParams(window.location.search).get("preset") === "maxwell" ||
       new URLSearchParams(window.location.search).get("demo") === "1" ||
@@ -7545,6 +7575,12 @@ function App() {
     return initialStops
   })
   const [updateMessage, setUpdateMessage] = useState(() => {
+    const isBoatParam =
+      new URLSearchParams(window.location.search).get("preset") === "boat" ||
+      new URLSearchParams(window.location.search).get("boat") === "1"
+    if (isBoatParam) {
+      return "Boat Quay was added after KŌBASHI."
+    }
     const isMulti =
       new URLSearchParams(window.location.search).get("multi") === "1"
     const isReplaceParam =
@@ -7561,6 +7597,9 @@ function App() {
         new URLSearchParams(window.location.search)
           .get("bounce")
           ?.toLowerCase() || ""
+      if (bounceParam.includes("boat")) {
+        return "Boat Quay was added after KŌBASHI."
+      }
       return bounceParam.includes("loulouca")
         ? "Loulouca was added after KŌBASHI."
         : "Maxwell Food Centre was added after KŌBASHI."
@@ -7995,7 +8034,7 @@ function App() {
     next = recalculateStopTimes(next)
     setPlanStops(next)
     setUpdateMessage(`${placeName} was added after ${prevStop ? prevStop.title : "stop"}.`)
-    setScreen("plan")
+    setScreen("updated")
   }
   const selectedIndex = planStops.findIndex(
     (stop) => stop.id === selectedStop.id,
@@ -8224,6 +8263,7 @@ function App() {
                         )
                       }
                     }}
+                    updateMessage={updateMessage}
                     onBack={() => setScreen("you")}
                     onPlace={(stop) => {
                       setSelectedStop(stop)
