@@ -388,7 +388,7 @@
         </div>
 
         <!-- Embedded Interactive App Iframe (frame=0 prevents duplicate framing inside iframe) -->
-        <iframe id="app-iframe" class="screen-viewport" src="http://localhost:8443/?screen=map&theme=dark&frame=0"></iframe>
+        <iframe id="app-iframe" class="screen-viewport" src="/?screen=map&theme=light&frame=0"></iframe>
 
       </div>
 
@@ -523,8 +523,7 @@
     }
 
     function updateUrl() {
-      const base = window.location.port ? '' : 'http://localhost:8443';
-      let url = `${base}/?screen=${currentScreen}&prototype=${currentPrototype}&theme=${currentTheme}&frame=0`;
+      let url = `/?screen=${currentScreen}&prototype=${currentPrototype}&theme=${currentTheme}&frame=0`;
       if (isDrawerCollapsed) {
         url += '&collapsed=1';
       }

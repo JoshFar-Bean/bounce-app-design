@@ -32,7 +32,7 @@ export default defineConfig(({ mode }) => {
     ],
     resolve: {
       alias: {
-        "@": path.resolve(__dirname, "./src"),
+        "@": path.resolve(import.meta.dirname, "./src"),
       },
     },
     server: {
@@ -458,13 +458,13 @@ function figmaMakeKitPlugin(options: {
  */
 function figmaLinkedPackageSourcemaps(): Plugin {
   const packageJson = JSON.parse(
-    fs.readFileSync(path.resolve(__dirname, "package.json"), "utf8"),
+    fs.readFileSync(path.resolve(import.meta.dirname, "package.json"), "utf8"),
   )
   const linkedPackages = Object.keys({
     ...packageJson.dependencies,
     ...packageJson.devDependencies,
   }).flatMap((name) => {
-    const installedDir = path.resolve(__dirname, "node_modules", name)
+    const installedDir = path.resolve(import.meta.dirname, "node_modules", name)
     try {
       const realDir = fs.realpathSync(installedDir)
       return realDir.split(path.sep).includes("node_modules")
