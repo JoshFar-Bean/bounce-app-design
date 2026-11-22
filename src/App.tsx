@@ -4567,8 +4567,8 @@ function parseTimeString(timeStr: string): {
   minute: number
   period: "AM" | "PM"
 } {
-  const clean = (timeStr || "").trim().toLowerCase()
-  const match = clean.match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/)
+  const clean = (timeStr || "").trim().toLowerCase().replace(/\s+/g, "")
+  const match = clean.match(/^(\d{1,2})[:.](\d{2})(am|pm)$/)
   if (match) {
     let h = parseInt(match[1], 10)
     let m = parseInt(match[2], 10)
@@ -4589,6 +4589,11 @@ function timeToMinutes(
   if (period === "PM" && h24 < 12) h24 += 12
   if (period === "AM" && h24 === 12) h24 = 0
   return h24 * 60 + minute
+}
+
+function parseTimeToMinutes(timeStr: string): number {
+  const p = parseTimeString(timeStr)
+  return timeToMinutes(p.hour, p.minute, p.period)
 }
 
 function WheelColumn<T extends string | number>({
@@ -4901,27 +4906,36 @@ function TimePickerDrawer({
     return `${hour}:${paddedMinute} ${period}`
   }, [hour, minute, period])
 
-  // Validation:
-  // "Ensure that the time selected does not exceed travel time to next location + time of next location
-  // (e.g travel time to location 8 mins, time of next location 7.30pm. time selected for previous destination should not be more than 7.12pm).
-  // If time exceeds, blur out and disable the 'confirm' button and have a red note appear above the time picker slider
-  // with text 'insufficient time to next stop' like the reference 'red text.png', tapping confirm will update the timing in the the itinerary plan."
-  const nextStop = index < stops.length - 1 ? stops[index + 1] : null
+  // Find other future stops to determine the effective next stop after reordering
+  const currentStopIndex = stops.findIndex((s) => s.current)
+  const otherFutureStops = useMemo(() => {
+    const future =
+      currentStopIndex !== -1 ? stops.slice(currentStopIndex + 1) : stops
+    return future.filter((s) => s.id !== stop.id)
+  }, [stops, currentStopIndex, stop.id])
+
+  const effectiveNextStop = useMemo(() => {
+    let candidate: TimelineStop | null = null
+    let candidateMins = Infinity
+    for (const s of otherFutureStops) {
+      const mins = parseTimeToMinutes(s.time)
+      if (mins > selectedMinutes && mins < candidateMins) {
+        candidate = s
+        candidateMins = mins
+      }
+    }
+    return candidate
+  }, [otherFutureStops, selectedMinutes])
 
   const isExceeded = useMemo(() => {
-    if (!nextStop) return false
-    const nextParsed = parseTimeString(nextStop.time)
-    const nextStopMinutes = timeToMinutes(
-      nextParsed.hour,
-      nextParsed.minute,
-      nextParsed.period,
-    )
+    if (!effectiveNextStop) return false
+    const nextStopMinutes = parseTimeToMinutes(effectiveNextStop.time)
 
     let travelMins = 8
     if (stop.meta && /garden\s*·\s*8\s*min/i.test(stop.meta)) {
       travelMins = 8
     } else {
-      const route = getRouteDetail(stop, nextStop, index)
+      const route = getRouteDetail(stop, effectiveNextStop, index)
       const match = route?.detail?.match(/(\d+)\s*min/i)
       if (match) {
         travelMins = parseInt(match[1], 10)
@@ -4929,10 +4943,9 @@ function TimePickerDrawer({
     }
 
     // 8 mins travel + 10 mins minimum stop visit buffer = 18 mins
-    // (7:30 pm - 18 mins = 7:12 pm)
     const maxAllowedMinutes = nextStopMinutes - (travelMins + 10)
     return selectedMinutes > maxAllowedMinutes
-  }, [nextStop, stop, index, selectedMinutes])
+  }, [effectiveNextStop, stop, index, selectedMinutes])
 
   if (!isOpen) return null
 
@@ -7384,9 +7397,16 @@ function App() {
     typeof window !== "undefined" &&
     (new URLSearchParams(window.location.search).get("preset") === "boat" ||
       new URLSearchParams(window.location.search).get("boat") === "1")
+  const isReorderPreset =
+    typeof window !== "undefined" &&
+    (new URLSearchParams(window.location.search).get("preset") === "reorder" ||
+      new URLSearchParams(window.location.search).get("preset") === "unreordered" ||
+      new URLSearchParams(window.location.search).get("preset") === "reordered")
   const initialScreen: Screen = isBoatPreset
     ? "updated"
-    : [
+    : isReorderPreset
+      ? "plan"
+      : [
         "map",
         "ask",
         "history",
@@ -7430,6 +7450,94 @@ function App() {
   const [screen, setScreen] = useState<Screen>(initialScreen)
   const [routeSearchTargetStop, setRouteSearchTargetStop] = useState<TimelineStop | null>(null)
   const [planStops, setPlanStops] = useState<TimelineStop[]>(() => {
+    const isReorderPreset =
+      new URLSearchParams(window.location.search).get("preset") === "reorder" ||
+      new URLSearchParams(window.location.search).get("reorder") === "1"
+    if (isReorderPreset) {
+      const stops = [...initialStops]
+      const greenIdx = stops.findIndex((s) => s.id === "green-oasis")
+      if (greenIdx >= 0) {
+        stops[greenIdx] = {
+          id: "bounce-maxwell",
+          time: "3:30 pm",
+          title: "Maxwell Food Centre",
+          meta: "Bounce addition · Nearby now",
+          changed: true,
+          isNew: true,
+          bounceSource: "kobashi",
+        }
+      }
+      stops.push({
+        id: "place-boat-quay",
+        time: "8:30 pm",
+        title: "Boat Quay",
+        meta: "Historic riverfront · Singapore River",
+        changed: true,
+        isNew: true,
+        bounceSource: "search",
+      })
+      return stops
+    }
+
+    const isUnreorderedPreset =
+      new URLSearchParams(window.location.search).get("preset") === "unreordered"
+    if (isUnreorderedPreset) {
+      const stops = [...initialStops]
+      const greenIdx = stops.findIndex((s) => s.id === "green-oasis")
+      if (greenIdx >= 0) {
+        stops[greenIdx] = {
+          id: "bounce-maxwell",
+          time: "3:30 pm",
+          title: "Maxwell Food Centre",
+          meta: "Bounce addition · Nearby now",
+          changed: true,
+          isNew: true,
+          bounceSource: "kobashi",
+        }
+      }
+      stops.push({
+        id: "place-boat-quay",
+        time: "6:00 pm",
+        title: "Boat Quay",
+        meta: "Historic riverfront · Singapore River",
+        changed: true,
+        isNew: true,
+        bounceSource: "search",
+      })
+      return stops
+    }
+
+    const isReorderedPreset =
+      new URLSearchParams(window.location.search).get("preset") === "reordered"
+    if (isReorderedPreset) {
+      const stops = [...initialStops]
+      const greenIdx = stops.findIndex((s) => s.id === "green-oasis")
+      if (greenIdx >= 0) {
+        stops[greenIdx] = {
+          id: "bounce-maxwell",
+          time: "3:30 pm",
+          title: "Maxwell Food Centre",
+          meta: "Bounce addition · Nearby now",
+          changed: true,
+          isNew: true,
+          bounceSource: "kobashi",
+        }
+      }
+      const louloucaIdx = stops.findIndex((s) => s.id === "loulouca")
+      if (louloucaIdx >= 0) {
+        stops.splice(louloucaIdx, 0, {
+          id: "place-boat-quay",
+          time: "6:00 pm",
+          title: "Boat Quay",
+          meta: "Historic riverfront · Singapore River",
+          changed: true,
+          isNew: true,
+          bounceSource: "search",
+        })
+      }
+      return stops
+    }
+
     const isBoatPreset =
       new URLSearchParams(window.location.search).get("preset") === "boat" ||
       new URLSearchParams(window.location.search).get("boat") === "1"
@@ -7956,9 +8064,51 @@ function App() {
   }
 
   const handleUpdateStopTime = (stopId: string, newTime: string) => {
-    setPlanStops((prev) =>
-      prev.map((s) => (s.id === stopId ? { ...s, time: newTime } : s)),
-    )
+    setPlanStops((prev) => {
+      const targetStop = prev.find((s) => s.id === stopId)
+      if (!targetStop) return prev
+
+      const updatedTarget: TimelineStop = { ...targetStop, time: newTime }
+
+      const currentIdx = prev.findIndex((s) => s.current)
+      if (currentIdx === -1) {
+        return prev.map((s) => (s.id === stopId ? updatedTarget : s))
+      }
+
+      const fixedStops = prev.slice(0, currentIdx + 1)
+      const futureStops = prev.slice(currentIdx + 1)
+
+      const targetFutureIdx = futureStops.findIndex((s) => s.id === stopId)
+      if (targetFutureIdx === -1) {
+        return prev.map((s) => (s.id === stopId ? updatedTarget : s))
+      }
+
+      // Remove target stop from future stops
+      const otherFutureStops = futureStops.filter((s) => s.id !== stopId)
+
+      // Time in minutes of newTime
+      const targetMins = parseTimeToMinutes(newTime)
+
+      // Find the first future stop whose time is strictly greater than targetMins
+      const insertIndex = otherFutureStops.findIndex(
+        (s) => parseTimeToMinutes(s.time) > targetMins,
+      )
+
+      const newFutureStops = [...otherFutureStops]
+      if (insertIndex === -1) {
+        // Later than all other future stops, append at the end
+        newFutureStops.push(updatedTarget)
+      } else {
+        // Auto update arrangements to move the new time slot up to before the relevant slot timings
+        newFutureStops.splice(insertIndex, 0, updatedTarget)
+      }
+
+      return [...fixedStops, ...newFutureStops]
+    })
+
+    if (selectedStop.id === stopId) {
+      setSelectedStop((prev) => ({ ...prev, time: newTime }))
+    }
   }
 
   const handleReorderStops = (nextStops: TimelineStop[]) => {
