@@ -2782,9 +2782,96 @@ function formatMinutesToTime(totalMins: number): string {
   return `${hours12}:${paddedMins} ${period}`
 }
 
+function parseTimeString(timeStr: string): {
+  hour: number
+  minute: number
+  period: "AM" | "PM"
+} {
+  const clean = (timeStr || "").trim().toLowerCase().replace(/\s+/g, "")
+  const match = clean.match(/^(\d{1,2})[:.](\d{2})(am|pm)$/)
+  if (match) {
+    let h = parseInt(match[1], 10)
+    let m = parseInt(match[2], 10)
+    const p: "AM" | "PM" = match[3] === "pm" ? "PM" : "AM"
+    if (h < 1 || h > 12) h = 12
+    if (m < 0 || m > 59) m = 0
+    return { hour: h, minute: m, period: p }
+  }
+  return { hour: 8, minute: 0, period: "PM" }
+}
+
+function timeToMinutes(
+  hour: number,
+  minute: number,
+  period: "AM" | "PM",
+): number {
+  let h24 = hour
+  if (period === "PM" && h24 < 12) h24 += 12
+  if (period === "AM" && h24 === 12) h24 = 0
+  return h24 * 60 + minute
+}
+
+function parseTimeToMinutes(timeStr: string): number {
+  const p = parseTimeString(timeStr)
+  return timeToMinutes(p.hour, p.minute, p.period)
+}
+
+function calculateSensibleIntermediateTime(
+  beforeStop?: TimelineStop,
+  afterStop?: TimelineStop,
+): string {
+  if (!beforeStop) {
+    if (afterStop && afterStop.time) {
+      const afterMins = parseTimeToMinutes(afterStop.time)
+      return formatMinutesToTime(Math.max(60, afterMins - 60))
+    }
+    return "2:00 pm"
+  }
+
+  const beforeMins = parseTimeToMinutes(beforeStop.time)
+
+  if (afterStop && afterStop.time) {
+    const afterMins = parseTimeToMinutes(afterStop.time)
+    if (afterMins > beforeMins) {
+      const gap = afterMins - beforeMins
+      let sensibleMins: number
+      if (gap >= 120) {
+        // Generous window (e.g. 150 mins between 3:30 pm and 6:00 pm):
+        // Midpoint 1005 rounds to nearest 30-min block: 1020 = 5:00 pm!
+        sensibleMins = Math.round(((beforeMins + afterMins) / 2) / 30) * 30
+      } else if (gap >= 45) {
+        // Moderate window (e.g. 60-90 mins): round midpoint to nearest 15 mins
+        sensibleMins = Math.round(((beforeMins + afterMins) / 2) / 15) * 15
+      } else if (gap >= 20) {
+        // Short window: round midpoint to nearest 5 mins
+        sensibleMins = Math.round(((beforeMins + afterMins) / 2) / 5) * 5
+      } else {
+        sensibleMins = beforeMins + 10
+      }
+      return formatMinutesToTime(sensibleMins)
+    }
+  }
+
+  // No after stop, or afterStop is earlier/equal to beforeStop:
+  // Add a sensible 1.5h buffer after beforeStop
+  return formatMinutesToTime(beforeMins + 90)
+}
+
 function recalculateStopTimes(stops: TimelineStop[]): TimelineStop[] {
   const kobashiIdx = stops.findIndex((s) => s.id === "kobashi" || s.current)
   if (kobashiIdx < 0) return stops
+
+  // If stops contain user-customized times or revisited stops, keep their timings intact
+  const hasCustomizedTimes = stops.some((s, idx) => {
+    if (idx <= kobashiIdx) return false
+    if (s.id.startsWith("revisit-") || s.meta.includes("Added back")) return true
+    if (s.id.includes("maxwell") && s.time !== "1:45 pm" && s.time !== "2:00 pm") return true
+    if (s.id.includes("boat") && s.time !== "1:45 pm" && s.time !== "2:35 pm") return true
+    return false
+  })
+  if (hasCustomizedTimes) {
+    return stops
+  }
 
   const result = stops.map((s) => ({ ...s }))
 
@@ -2944,6 +3031,10 @@ function getRouteDetail(
       return { icon: "walk", title: "Walk", detail: "650 m · 8 min" }
     case "maxwell->kahve":
       return { icon: "walk", title: "Walk", detail: "650 m · 8 min" }
+    case "kahve->boat-quay":
+      return { icon: "bus", title: "Bus 80", detail: "4 stops · 16 min" }
+    case "boat-quay->kahve":
+      return { icon: "bus", title: "Bus 80", detail: "4 stops · 16 min" }
     case "kahve->green-oasis":
       return { icon: "walk", title: "Walk", detail: "600 m · 8 min" }
     case "maxwell->loulouca":
@@ -4560,40 +4651,6 @@ function InviteDrawer({
       </div>
     </div>
   )
-}
-
-function parseTimeString(timeStr: string): {
-  hour: number
-  minute: number
-  period: "AM" | "PM"
-} {
-  const clean = (timeStr || "").trim().toLowerCase().replace(/\s+/g, "")
-  const match = clean.match(/^(\d{1,2})[:.](\d{2})(am|pm)$/)
-  if (match) {
-    let h = parseInt(match[1], 10)
-    let m = parseInt(match[2], 10)
-    const p: "AM" | "PM" = match[3] === "pm" ? "PM" : "AM"
-    if (h < 1 || h > 12) h = 12
-    if (m < 0 || m > 59) m = 0
-    return { hour: h, minute: m, period: p }
-  }
-  return { hour: 8, minute: 0, period: "PM" }
-}
-
-function timeToMinutes(
-  hour: number,
-  minute: number,
-  period: "AM" | "PM",
-): number {
-  let h24 = hour
-  if (period === "PM" && h24 < 12) h24 += 12
-  if (period === "AM" && h24 === 12) h24 = 0
-  return h24 * 60 + minute
-}
-
-function parseTimeToMinutes(timeStr: string): number {
-  const p = parseTimeString(timeStr)
-  return timeToMinutes(p.hour, p.minute, p.period)
 }
 
 function WheelColumn<T extends string | number>({
@@ -7402,7 +7459,11 @@ function App() {
     (new URLSearchParams(window.location.search).get("preset") === "reorder" ||
       new URLSearchParams(window.location.search).get("preset") === "unreordered" ||
       new URLSearchParams(window.location.search).get("preset") === "reordered")
-  const initialScreen: Screen = isBoatPreset
+  const isRevisitKahvePreset =
+    typeof window !== "undefined" &&
+    (new URLSearchParams(window.location.search).get("preset") === "revisit-kahve" ||
+      new URLSearchParams(window.location.search).get("revisit-kahve") === "1")
+  const initialScreen: Screen = isBoatPreset || isRevisitKahvePreset
     ? "updated"
     : isReorderPreset
       ? "plan"
@@ -7534,6 +7595,51 @@ function App() {
           isNew: true,
           bounceSource: "search",
         })
+      }
+      return stops
+    }
+
+    const isRevisitKahvePreset =
+      new URLSearchParams(window.location.search).get("preset") === "revisit-kahve" ||
+      new URLSearchParams(window.location.search).get("revisit-kahve") === "1"
+    if (isRevisitKahvePreset) {
+      const stops = [...initialStops]
+      const greenIdx = stops.findIndex((s) => s.id === "green-oasis")
+      if (greenIdx >= 0) {
+        stops[greenIdx] = {
+          id: "bounce-maxwell",
+          time: "3:30 pm",
+          title: "Maxwell Food Centre",
+          meta: "Bounce addition · Nearby now",
+          changed: true,
+          isNew: true,
+          bounceSource: "kobashi",
+        }
+      }
+      const louloucaIdx = stops.findIndex((s) => s.id === "loulouca")
+      if (louloucaIdx >= 0) {
+        stops.splice(
+          louloucaIdx,
+          0,
+          {
+            id: "revisit-kahve",
+            time: "5:00 pm",
+            title: "Kahve",
+            meta: "Coffee · Added back",
+            changed: true,
+            isNew: true,
+            bounceSource: "kobashi",
+          },
+          {
+            id: "place-boat-quay",
+            time: "6:00 pm",
+            title: "Boat Quay",
+            meta: "Historic riverfront · Singapore River",
+            changed: true,
+            isNew: true,
+            bounceSource: "search",
+          },
+        )
       }
       return stops
     }
@@ -7683,6 +7789,12 @@ function App() {
     return initialStops
   })
   const [updateMessage, setUpdateMessage] = useState(() => {
+    const isRevisitKahveParam =
+      new URLSearchParams(window.location.search).get("preset") === "revisit-kahve" ||
+      new URLSearchParams(window.location.search).get("revisit-kahve") === "1"
+    if (isRevisitKahveParam) {
+      return "Kahve was added after Maxwell Food Centre."
+    }
     const isBoatParam =
       new URLSearchParams(window.location.search).get("preset") === "boat" ||
       new URLSearchParams(window.location.search).get("boat") === "1"
@@ -7939,10 +8051,18 @@ function App() {
     const kobashiIdx = planStops.findIndex((s) => s.id === "kobashi")
     const isAfterKobashi =
       afterId === "kobashi" || (kobashiIdx >= 0 && targetIndex >= kobashiIdx)
+
+    const beforeStop = planStops[targetIndex]
+    const afterStop = planStops[targetIndex + 1]
+    const calculatedTime = calculateSensibleIntermediateTime(
+      beforeStop,
+      afterStop,
+    )
+
     const revisitedStop: TimelineStop = {
       ...stopToUse,
       id: `revisit-${stopToUse.id}-${Date.now()}`,
-      time: isAfterKobashi ? "2:00 pm" : "Revisit",
+      time: calculatedTime,
       past: false,
       current: false,
       changed: true,
@@ -7951,7 +8071,6 @@ function App() {
     }
     let next = [...planStops]
     next.splice(targetIndex + 1, 0, revisitedStop)
-    next = recalculateStopTimes(next)
     setPlanStops(next)
     setUpdateMessage(
       `${stopToUse.title} was added after ${planStops[targetIndex].title}.`,
