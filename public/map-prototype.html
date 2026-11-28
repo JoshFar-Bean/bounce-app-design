@@ -628,7 +628,8 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const initialThemeParam = urlParams.get('theme');
-    let isNightMode = initialThemeParam === 'dark';
+    const isNetlifyHost = window.location.hostname.includes('netlify.app') || window.location.hostname.includes('bounceproto');
+    let isNightMode = isNetlifyHost ? true : (initialThemeParam !== 'light');
 
     if (!isNightMode) {
       document.body.classList.add('theme-light');

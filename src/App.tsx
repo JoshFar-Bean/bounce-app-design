@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useMemo, type ReactNode } from "react"
+import { ScenarioGuide, markScenarioStepComplete } from "./components/ScenarioGuide"
 
 type Screen =
   | "map"
@@ -2173,7 +2174,10 @@ function HistoryScreen({
         {
           title: "give me a 2 day plan of food places base...",
           time: "2 days ago",
-          action: onOpen,
+          action: () => {
+            markScenarioStepComplete("share-plan", 2)
+            onOpen()
+          },
         },
       ],
     },
@@ -3043,8 +3047,19 @@ function getRouteDetail(
       return { icon: "walk", title: "Walk", detail: "350 m · 5 min" }
     case "maxwell->green-oasis":
       return { icon: "walk", title: "Walk", detail: "750 m · 11 min" }
+    case "green-oasis->maxwell":
+      return { icon: "walk", title: "Walk", detail: "750 m · 11 min" }
     case "loulouca->green-oasis":
       return { icon: "walk", title: "Walk", detail: "750 m · 11 min" }
+    case "green-oasis->loulouca":
+      return {
+        icon: "train",
+        title: "Thomson–East Coast Line",
+        detail: "TE19 → TE18 · 14 min",
+        lineClass: "thomson",
+      }
+    case "loulouca->boat-quay":
+      return { icon: "bus", title: "Bus 80", detail: "4 stops · 16 min" }
   }
 
   if (fromKey === "green-oasis") {
@@ -3153,6 +3168,7 @@ function SwipeableTimelineRow({
   }, [isOpen, openOffset])
 
   const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0 && e.pointerType === "mouse") return
     if (!isRemovable && !isDraggable) return
     isDragging.current = true
     startX.current = e.clientX
@@ -3171,20 +3187,21 @@ function SwipeableTimelineRow({
     const diffY = e.clientY - startY.current
 
     if (!hasLockedDirection.current) {
-      if (Math.abs(diffX) > 5 || Math.abs(diffY) > 5) {
+      if (Math.abs(diffX) > 4 || Math.abs(diffY) > 4) {
         hasLockedDirection.current = true
-        if (Math.abs(diffX) > Math.abs(diffY)) {
-          if (isRemovable) {
-            isHorizontalDrag.current = true
-            isVerticalDrag.current = false
-          }
-        } else {
-          if (isDraggable) {
-            isVerticalDrag.current = true
-            isHorizontalDrag.current = false
-            justDragged.current = true
-            onDragStart?.(startY.current)
-          }
+        if (isDraggable && Math.abs(diffY) >= Math.abs(diffX)) {
+          isVerticalDrag.current = true
+          isHorizontalDrag.current = false
+          justDragged.current = true
+          onDragStart?.(startY.current)
+        } else if (isRemovable && Math.abs(diffX) > Math.abs(diffY)) {
+          isHorizontalDrag.current = true
+          isVerticalDrag.current = false
+        } else if (isDraggable) {
+          isVerticalDrag.current = true
+          isHorizontalDrag.current = false
+          justDragged.current = true
+          onDragStart?.(startY.current)
         }
       }
     }
@@ -5132,6 +5149,7 @@ function PlanScreen({
   onSearch,
   onUpdateTime,
   onReorderStops,
+  scale,
 }: {
   stops: TimelineStop[]
   theme: Theme
@@ -5139,7 +5157,7 @@ function PlanScreen({
   onCurrent?: () => void
   onPlace: (stop: TimelineStop) => void
   onBack: () => void
-  updateMessage?: string
+  updateMessage?: string | null
   selectedLegIndex?: number | null
   onHighlightLeg?: (index: number) => void
   onResetHighlight?: () => void
@@ -5152,6 +5170,7 @@ function PlanScreen({
   onSearch?: (stop: TimelineStop) => void
   onUpdateTime?: (stopId: string, newTime: string) => void
   onReorderStops?: (newStops: TimelineStop[]) => void
+  scale?: number
 }) {
   const currentRef = useRef<HTMLDivElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -5190,14 +5209,15 @@ function PlanScreen({
     if (initialIndex === -1) return
 
     const rects: Array<{ top: number; height: number; center: number }> = []
-    future.forEach((s) => {
-      const el = cardRefs.current[s.id]
+    const s = scale || 1
+    future.forEach((stopItem) => {
+      const el = cardRefs.current[stopItem.id]
       if (el) {
         const r = el.getBoundingClientRect()
         rects.push({
-          top: r.top,
-          height: r.height,
-          center: r.top + r.height / 2,
+          top: r.top / s,
+          height: r.height / s,
+          center: (r.top + r.height / 2) / s,
         })
       } else {
         rects.push({ top: 0, height: 0, center: 0 })
@@ -5220,7 +5240,8 @@ function PlanScreen({
 
   const handleMoveDrag = (clientY: number) => {
     if (!isDraggingStopRef.current) return
-    const rawDiffY = clientY - dragStartClientY.current
+    const s = scale || 1
+    const rawDiffY = (clientY - dragStartClientY.current) / s
     const rects = slotRectsRef.current
     const initialIndex = initialSlotIndexRef.current
     const futureCount = rects.length
@@ -5248,17 +5269,14 @@ function PlanScreen({
     const draggedCenter = rects[initialIndex].center + clamped
 
     let newHover = initialIndex
-    if (clamped > 0) {
-      for (let k = initialIndex + 1; k < futureCount; k++) {
-        if (draggedCenter > rects[k].center) {
-          newHover = k
-        }
-      }
-    } else if (clamped < 0) {
-      for (let k = initialIndex - 1; k >= 0; k--) {
-        if (draggedCenter < rects[k].center) {
-          newHover = k
-        }
+    let minDistance = Math.abs(draggedCenter - rects[initialIndex].center)
+
+    for (let k = 0; k < futureCount; k++) {
+      if (!rects[k]) continue
+      const dist = Math.abs(draggedCenter - rects[k].center)
+      if (dist < minDistance) {
+        minDistance = dist
+        newHover = k
       }
     }
 
@@ -5433,6 +5451,7 @@ function PlanScreen({
   const [toastMessage, setToastMessage] = useState<string | null>(null)
 
   const handleCopyLink = () => {
+    markScenarioStepComplete("share-plan", 5)
     try {
       navigator.clipboard?.writeText(
         "https://maps.app.goo.gl/SingaporeFoodTrail",
@@ -5760,7 +5779,10 @@ function PlanScreen({
               <RoundAction
                 icon="share"
                 label="Share plan"
-                onPress={() => setDrawerMode("share")}
+                onPress={() => {
+                  markScenarioStepComplete("share-plan", 5)
+                  setDrawerMode("share")
+                }}
               />
               <RoundAction
                 icon="more"
@@ -5776,15 +5798,13 @@ function PlanScreen({
               {stops.map((stop, index) => {
                 const isRemovable = true
                 const currentIdx = stops.findIndex((s) => s.current)
-                const isTimeAdjustable = currentIdx !== -1 && index > currentIdx
+                const isTimeAdjustable = !stop.past && !stop.current
                 const isDraggable =
-                  currentIdx !== -1 &&
-                  index > currentIdx &&
                   !stop.past &&
-                  !stop.current
-                const futureIndex = isDraggable
-                  ? index - (currentIdx + 1)
-                  : -1
+                  !stop.current &&
+                  (currentIdx === -1 || index > currentIdx)
+                const futureStops = stops.filter((s) => !s.past && !s.current)
+                const futureIndex = futureStops.findIndex((s) => s.id === stop.id)
                 const isFloating = stop.id === draggedStopId
                 const isGliding = Boolean(
                   draggedStopId && stop.id !== draggedStopId && isDraggable,
@@ -5832,6 +5852,18 @@ function PlanScreen({
                       onPlace={() => onPlace(stop)}
                       isAddExpanded={expandedAddStopId === stop.id}
                       onToggleAdd={() => {
+                        if (
+                          stop.id === "kobashi" ||
+                          stop.title.toLowerCase().includes("kobashi")
+                        ) {
+                          markScenarioStepComplete("bounce-light-mode", 0)
+                        }
+                        if (
+                          stop.id === "loulouca" ||
+                          stop.title.toLowerCase().includes("loulouca")
+                        ) {
+                          markScenarioStepComplete("add-boat-quay", 0)
+                        }
                         setExpandedAddStopId((prev) =>
                           prev === stop.id ? null : stop.id,
                         )
@@ -5919,6 +5951,7 @@ function PlanScreen({
           setDrawerMode("invite")
         }}
         onShare={() => {
+          markScenarioStepComplete("share-plan", 5)
           setMenuOpen(false)
           setDrawerMode("share")
         }}
@@ -6000,6 +6033,13 @@ function RevisitSheet({
   onReplace: (replaceId: string) => void
   onClose: () => void
 }) {
+  useEffect(() => {
+    markScenarioStepComplete("revisit-kahve", 0)
+    if (stop.title.toLowerCase().includes("kahve")) {
+      markScenarioStepComplete("revisit-kahve", 1)
+    }
+  }, [stop])
+
   // Option 1: Recommendation of where to add after
   const recommendedStop =
     fullItinerary.find((s) => s.current) ||
@@ -6045,7 +6085,10 @@ function RevisitSheet({
           {recommendedStop && (
             <div
               className="revisit-option-card option-recommendation"
-              onClick={() => onAddAfter(recommendedStop.id)}
+              onClick={() => {
+                markScenarioStepComplete("revisit-kahve", 2)
+                onAddAfter(recommendedStop.id)
+              }}
               role="button"
               tabIndex={0}
               aria-label={`Recommended: Add after ${recommendedStop.title}`}
@@ -6252,6 +6295,7 @@ function RevisitSheet({
                 type="button"
                 className="revisit-dropdown-confirm-btn"
                 onClick={() => {
+                  markScenarioStepComplete("revisit-kahve", 2)
                   setIsDropdownOpen(false)
                   onAddAfter(selectedDropdownId)
                 }}
@@ -6292,6 +6336,11 @@ function PlaceScreen({
   const [showRevisit, setShowRevisit] = useState(
     new URLSearchParams(window.location.search).get("revisit") === "1",
   )
+  useEffect(() => {
+    if (stop.title.toLowerCase().includes("kobashi")) {
+      markScenarioStepComplete("bounce-light-mode", 0)
+    }
+  }, [stop])
   const actionLabel = stop.past ? "Revisit" : "Bounce"
   const heroImage = stop.title === "KŌBASHI" || stop.past ? "5" : "6"
   return (
@@ -6329,14 +6378,30 @@ function PlaceScreen({
             <Icon name="bookmark" />
             Saved
           </span>
-          <span className="teal-pill">
+          <span
+            className="teal-pill"
+            onClick={() => markScenarioStepComplete("share-plan", 5)}
+          >
             <Icon name="share" />
             Share
           </span>
           <Tap
             label={`${actionLabel} ${stop.title}`}
             className={`teal-pill inline-action ${stop.past ? "revisit" : ""}`}
-            onPress={stop.past ? () => setShowRevisit(true) : onBounce}
+            onPress={
+              stop.past
+                ? () => {
+                    markScenarioStepComplete("revisit-kahve", 0)
+                    if (stop.title.toLowerCase().includes("kahve")) {
+                      markScenarioStepComplete("revisit-kahve", 1)
+                    }
+                    setShowRevisit(true)
+                  }
+                : () => {
+                    markScenarioStepComplete("bounce-light-mode", 1)
+                    onBounce()
+                  }
+            }
           >
             <Icon name={stop.past ? "history" : "shuffle"} />
             {actionLabel}
@@ -7021,15 +7086,32 @@ function SearchAlongRouteScreen({
     },
   ]
 
+  const handleQueryChange = (val: string) => {
+    setQuery(val)
+    if (val.trim().length > 0) {
+      markScenarioStepComplete("add-boat-quay", 2)
+    }
+  }
+
   const handleKeyPress = (key: string) => {
     if (key === "backspace") {
       setQuery((prev) => prev.slice(0, -1))
     } else if (key === "space") {
-      setQuery((prev) => prev + " ")
+      setQuery((prev) => {
+        const next = prev + " "
+        if (next.trim().length > 0) {
+          markScenarioStepComplete("add-boat-quay", 2)
+        }
+        return next
+      })
     } else if (key === "return" || key === "search") {
       setIsKeyboardOpen(false)
     } else {
-      setQuery((prev) => prev + key)
+      setQuery((prev) => {
+        const next = prev + key
+        markScenarioStepComplete("add-boat-quay", 2)
+        return next
+      })
     }
   }
 
@@ -7062,7 +7144,7 @@ function SearchAlongRouteScreen({
             className="search-route-real-input"
             value={query}
             placeholder="Search along route"
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => handleQueryChange(e.target.value)}
             onFocus={() => setIsKeyboardOpen(true)}
             autoComplete="off"
             spellCheck="false"
@@ -7388,8 +7470,19 @@ const isRunningInIframe = (() => {
   }
 })()
 
+const isNetlify = (() => {
+  if (typeof window === "undefined") return false
+  const host = window.location.hostname.toLowerCase()
+  return host.includes("netlify.app") || host.includes("bounceproto")
+})()
+
 function getInitialDeviceMode(): DeviceMode {
   if (typeof window === "undefined") return "local"
+
+  // On Netlify, always use the iPhone device presentation frame (no figma make mode toggle)
+  if (isNetlify) {
+    return "local"
+  }
 
   // 1. Explicit query parameter override
   const searchParams = new URLSearchParams(window.location.search)
@@ -7489,26 +7582,179 @@ function App() {
   const prototypeParam =
     searchParams.get("prototype") || searchParams.get("default")
   const themeParam = searchParams.get("theme")
-  const savedPrototype =
-    typeof window !== "undefined"
-      ? window.sessionStorage?.getItem("bounce_prototype_theme")
-      : null
-
   const initialPrototype: "light" | "dark" =
-    prototypeParam === "dark" || themeParam === "dark"
-      ? "dark"
-      : prototypeParam === "light" || themeParam === "light"
-        ? "light"
-        : savedPrototype === "dark"
-          ? "dark"
-          : "light"
+    prototypeParam === "light" || themeParam === "light"
+      ? "light"
+      : "dark"
 
-  const [prototypeMode, setPrototypeMode] = useState<"light" | "dark">(
-    initialPrototype,
-  )
   const [theme, setTheme] = useState<Theme>(initialPrototype)
   const initialMapTheme = useRef<Theme>(initialPrototype).current
   const [screen, setScreen] = useState<Screen>(initialScreen)
+
+  const handleToggleTheme = () => {
+    const nextTheme: Theme = theme === "dark" ? "light" : "dark"
+    if (nextTheme === "light") {
+      markScenarioStepComplete("bounce-light-mode", 2)
+    }
+    setTheme(nextTheme)
+  }
+
+  useEffect(() => {
+    if (screen === "ask") {
+      markScenarioStepComplete("share-plan", 0)
+    } else if (screen === "history") {
+      markScenarioStepComplete("share-plan", 1)
+    } else if (screen === "chat") {
+      markScenarioStepComplete("share-plan", 2)
+    } else if (screen === "saved") {
+      markScenarioStepComplete("share-plan", 3)
+    } else if (screen === "bounce") {
+      markScenarioStepComplete("bounce-light-mode", 1)
+    } else if (screen === "search-along-route") {
+      markScenarioStepComplete("add-boat-quay", 1)
+    }
+  }, [screen])
+
+  // Handle restarting / resetting prototype state for a specific scenario
+  useEffect(() => {
+    const handleRestartScenario = (e: Event) => {
+      const customEvent = e as CustomEvent<{ scenarioId: string }>
+      if (!customEvent.detail) return
+      const { scenarioId } = customEvent.detail
+
+      if (scenarioId === "share-plan") {
+        setScreen("map")
+        setPlanStops(initialStops)
+        setUpdateMessage(null)
+        setSelectedLegIndex(null)
+        setSelectedStop(initialStops[2])
+        if (iframeRef.current && iframeRef.current.contentWindow) {
+          iframeRef.current.contentWindow.postMessage(
+            { type: "SET_MODE", mode: "explore", stops: initialStops },
+            "*",
+          )
+          iframeRef.current.contentWindow.postMessage({ type: "RECENTER" }, "*")
+        }
+      } else if (scenarioId === "bounce-light-mode") {
+        setScreen("plan")
+        setPlanStops(initialStops)
+        setTheme("dark")
+        setUpdateMessage(null)
+        setSelectedLegIndex(null)
+        setSelectedStop(initialStops[2])
+        if (iframeRef.current && iframeRef.current.contentWindow) {
+          iframeRef.current.contentWindow.postMessage(
+            { type: "THEME_TOGGLE", isDark: true },
+            "*",
+          )
+          iframeRef.current.contentWindow.postMessage(
+            { type: "SET_MODE", mode: "itinerary", stops: initialStops },
+            "*",
+          )
+          iframeRef.current.contentWindow.postMessage({ type: "RECENTER" }, "*")
+        }
+      } else if (scenarioId === "add-boat-quay") {
+        const stops = [...initialStops]
+        const greenIdx = stops.findIndex((s) => s.id === "green-oasis")
+        if (greenIdx >= 0) {
+          stops[greenIdx] = {
+            id: "bounce-maxwell",
+            time: "2:00 pm",
+            title: "Maxwell Food Centre",
+            meta: "Bounce addition · Nearby now",
+            changed: true,
+            isNew: true,
+            bounceSource: "kobashi",
+          }
+        }
+        setScreen("plan")
+        setPlanStops(stops)
+        setUpdateMessage(null)
+        setSelectedLegIndex(null)
+        if (iframeRef.current && iframeRef.current.contentWindow) {
+          iframeRef.current.contentWindow.postMessage(
+            { type: "SET_MODE", mode: "itinerary", stops },
+            "*",
+          )
+        }
+      } else if (scenarioId === "drag-reorder") {
+        const stops = [...initialStops]
+        const greenIdx = stops.findIndex((s) => s.id === "green-oasis")
+        if (greenIdx >= 0) {
+          stops[greenIdx] = {
+            id: "bounce-maxwell",
+            time: "2:00 pm",
+            title: "Maxwell Food Centre",
+            meta: "Bounce addition · Nearby now",
+            changed: true,
+            isNew: true,
+            bounceSource: "kobashi",
+          }
+        }
+        stops.push({
+          id: "place-boat-quay",
+          time: "8:30 pm",
+          title: "Boat Quay",
+          meta: "Historic riverfront · Singapore River",
+          changed: true,
+          isNew: true,
+          bounceSource: "search",
+        })
+        setScreen("plan")
+        setPlanStops(stops)
+        setUpdateMessage(null)
+        setSelectedLegIndex(null)
+        if (iframeRef.current && iframeRef.current.contentWindow) {
+          iframeRef.current.contentWindow.postMessage(
+            { type: "SET_MODE", mode: "itinerary", stops },
+            "*",
+          )
+        }
+      } else if (scenarioId === "revisit-kahve") {
+        const stops = [...initialStops]
+        const greenIdx = stops.findIndex((s) => s.id === "green-oasis")
+        if (greenIdx >= 0) {
+          stops[greenIdx] = {
+            id: "bounce-maxwell",
+            time: "3:30 pm",
+            title: "Maxwell Food Centre",
+            meta: "Bounce addition · Nearby now",
+            changed: true,
+            isNew: true,
+            bounceSource: "kobashi",
+          }
+        }
+        const louloucaIdx = stops.findIndex((s) => s.id === "loulouca")
+        if (louloucaIdx >= 0) {
+          stops.splice(louloucaIdx, 0, {
+            id: "place-boat-quay",
+            time: "6:00 pm",
+            title: "Boat Quay",
+            meta: "Historic riverfront · Singapore River",
+            changed: true,
+            isNew: true,
+            bounceSource: "search",
+          })
+        }
+        setScreen("plan")
+        setPlanStops(stops)
+        setUpdateMessage(null)
+        setSelectedLegIndex(null)
+        if (iframeRef.current && iframeRef.current.contentWindow) {
+          iframeRef.current.contentWindow.postMessage(
+            { type: "SET_MODE", mode: "itinerary", stops },
+            "*",
+          )
+        }
+      }
+    }
+
+    window.addEventListener("prototype-restart-scenario", handleRestartScenario)
+    return () => {
+      window.removeEventListener("prototype-restart-scenario", handleRestartScenario)
+    }
+  }, [])
+
   const [routeSearchTargetStop, setRouteSearchTargetStop] = useState<TimelineStop | null>(null)
   const [planStops, setPlanStops] = useState<TimelineStop[]>(() => {
     const isReorderPreset =
@@ -7788,7 +8034,7 @@ function App() {
     }
     return initialStops
   })
-  const [updateMessage, setUpdateMessage] = useState(() => {
+  const [updateMessage, setUpdateMessage] = useState<string | null>(() => {
     const isRevisitKahveParam =
       new URLSearchParams(window.location.search).get("preset") === "revisit-kahve" ||
       new URLSearchParams(window.location.search).get("revisit-kahve") === "1"
@@ -7861,6 +8107,77 @@ function App() {
     return () => clearTimeout(timer)
   }, [deviceMode])
 
+  // Dynamic scale factor so the full app fits in any browser window at 100%
+  // and scales smoothly in size when zooming in/out or resizing
+  const [scale, setScale] = useState<number>(1)
+  const isGuideMinimisedRef = useRef<boolean>(false)
+
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem("bounce_scenario_is_minimised")
+      isGuideMinimisedRef.current = saved === "true"
+    } catch { }
+
+    if (deviceMode === "figma") {
+      setScale(1)
+      return
+    }
+
+    const computeScale = () => {
+      const vh = window.innerHeight || document.documentElement.clientHeight || 900
+      const vw = window.innerWidth || document.documentElement.clientWidth || 1400
+
+      // Natural dimensions of iPhone 18 Pro chassis
+      const CHASSIS_W = 493
+      const CHASSIS_H = 1044
+
+      // Height constraint: 36px total vertical margin
+      const targetH = Math.max(300, vh - 36)
+      let s = targetH / CHASSIS_H
+
+      // Width constraint so phone fits on screen
+      const targetW = Math.max(280, vw - 32)
+      const sW = targetW / CHASSIS_W
+      s = Math.min(s, sW)
+
+      // On desktop with guide open, ensure centered phone doesn't overlap guide
+      if (vw > 900 && !isGuideMinimisedRef.current) {
+        const spaceFromCenter = (vw / 2) - 410
+        if (spaceFromCenter > 120) {
+          const maxHalfScale = spaceFromCenter / (CHASSIS_W / 2)
+          s = Math.min(s, maxHalfScale)
+        }
+      }
+
+      const clamped = Math.max(0.35, Math.min(1.6, Number(s.toFixed(3))))
+      setScale(clamped)
+    }
+
+    computeScale()
+
+    const handleMinimiseToggle = (e: Event) => {
+      const customEvent = e as CustomEvent<{ isMinimised: boolean }>
+      if (customEvent.detail) {
+        isGuideMinimisedRef.current = customEvent.detail.isMinimised
+        computeScale()
+      }
+    }
+
+    window.addEventListener("resize", computeScale)
+    window.addEventListener("scenario-guide-minimise-toggle", handleMinimiseToggle)
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", computeScale)
+    }
+
+    return () => {
+      window.removeEventListener("resize", computeScale)
+      window.removeEventListener("scenario-guide-minimise-toggle", handleMinimiseToggle)
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener("resize", computeScale)
+      }
+    }
+  }, [deviceMode])
+
   useEffect(() => {
     const handleResize = () => {
       if (iframeRef.current && iframeRef.current.contentWindow) {
@@ -7873,18 +8190,6 @@ function App() {
     window.addEventListener("resize", handleResize)
     return () => window.removeEventListener("resize", handleResize)
   }, [])
-
-  const handleSelectPrototype = (mode: "light" | "dark") => {
-    setPrototypeMode(mode)
-    setTheme(mode)
-    try {
-      window.sessionStorage?.setItem("bounce_prototype_theme", mode)
-      const url = new URL(window.location.href)
-      url.searchParams.set("prototype", mode)
-      url.searchParams.set("theme", mode)
-      window.history.replaceState({}, "", url.toString())
-    } catch { }
-  }
 
   const highlightRouteLeg = (index: number) => {
     setSelectedLegIndex(index)
@@ -7981,6 +8286,9 @@ function App() {
   }
 
   const applyBounce = (place: string) => {
+    if (place.toLowerCase().includes("maxwell")) {
+      markScenarioStepComplete("bounce-light-mode", 3)
+    }
     let sourceIndex = planStops.findIndex((stop) => stop.id === selectedStop.id)
     if (sourceIndex < 0) return
     let next = [...planStops]
@@ -8046,6 +8354,9 @@ function App() {
   }
   const applyRevisit = (afterId: string, customStop?: TimelineStop) => {
     const stopToUse = customStop || selectedStop
+    if (stopToUse.title.toLowerCase().includes("kahve")) {
+      markScenarioStepComplete("revisit-kahve", 2)
+    }
     const targetIndex = planStops.findIndex((stop) => stop.id === afterId)
     if (targetIndex < 0) return
     const kobashiIdx = planStops.findIndex((s) => s.id === "kobashi")
@@ -8183,6 +8494,15 @@ function App() {
   }
 
   const handleUpdateStopTime = (stopId: string, newTime: string) => {
+    const lowerStopId = stopId.toLowerCase()
+    const lowerTime = newTime.toLowerCase()
+    if (lowerStopId.includes("maxwell") && lowerTime.includes("3:30")) {
+      markScenarioStepComplete("drag-reorder", 0)
+    }
+    if (lowerStopId.includes("boat") && lowerTime.includes("6:00")) {
+      markScenarioStepComplete("drag-reorder", 1)
+    }
+
     setPlanStops((prev) => {
       const targetStop = prev.find((s) => s.id === stopId)
       if (!targetStop) return prev
@@ -8232,6 +8552,23 @@ function App() {
 
   const handleReorderStops = (nextStops: TimelineStop[]) => {
     setPlanStops(nextStops)
+    const maxwell = nextStops.find(
+      (s) => s.id.includes("maxwell") || s.title.toLowerCase().includes("maxwell"),
+    )
+    if (maxwell && maxwell.time.toLowerCase().includes("3:30")) {
+      markScenarioStepComplete("drag-reorder", 0)
+    }
+    const boat = nextStops.find(
+      (s) => s.id.includes("boat") || s.title.toLowerCase().includes("boat"),
+    )
+    if (
+      boat &&
+      (boat.time.toLowerCase().includes("6:00") ||
+        nextStops.indexOf(boat) <
+          nextStops.findIndex((s) => s.title.toLowerCase().includes("loulouca")))
+    ) {
+      markScenarioStepComplete("drag-reorder", 1)
+    }
   }
   const revertSelectedStop = () => {
     if (!selectedStop.originalTitle || !selectedStop.originalMeta) return
@@ -8260,6 +8597,9 @@ function App() {
     placeName: string,
     targetStop?: TimelineStop | null,
   ) => {
+    if (placeName.toLowerCase().includes("boat quay")) {
+      markScenarioStepComplete("add-boat-quay", 3)
+    }
     const afterStop = targetStop || selectedStop || planStops[0]
     const targetIndex = planStops.findIndex((s) => s.id === afterStop.id)
     const insertIdx = targetIndex >= 0 ? targetIndex + 1 : 1
@@ -8316,8 +8656,31 @@ function App() {
       className={`app-shell ${theme === "light" ? "light-shell" : "dark-shell"
         } ${deviceMode === "figma" ? "figma-device-mode" : ""}`}
     >
-      {/* iPhone 18 Pro Black Chassis (flattened / full-bleed in Figma Make mode) */}
-      <div className="iphone-pro-chassis">
+      {/* Responsive phone scaler: dynamically scales to fit the viewport */}
+      <div
+        className="phone-scaler-wrapper"
+          style={
+            deviceMode === "figma"
+              ? undefined
+              : {
+                  width: Math.round(493 * scale),
+                  height: Math.round(1044 * scale),
+                }
+          }
+        >
+          {/* iPhone 18 Pro Black Chassis (flattened / full-bleed in Figma Make mode) */}
+          <div
+            className="iphone-pro-chassis"
+            style={
+              deviceMode === "figma"
+                ? undefined
+                : {
+                    transform: `scale(${scale})`,
+                    transformOrigin: "center center",
+                    flexShrink: 0,
+                  }
+            }
+          >
         {/* Hardware buttons on chassis - hidden in Figma Make mode */}
         {deviceMode !== "figma" && (
           <>
@@ -8407,10 +8770,11 @@ function App() {
                 <MapScreen
                   saved={false}
                   theme={theme}
-                  onToggleTheme={() =>
-                    setTheme(theme === "dark" ? "light" : "dark")
-                  }
-                  onAsk={() => setScreen("ask")}
+                  onToggleTheme={handleToggleTheme}
+                  onAsk={() => {
+                    markScenarioStepComplete("share-plan", 0)
+                    setScreen("ask")
+                  }}
                   onYou={() => setScreen("you")}
                   onDirections={() => setScreen("plan")}
                   onRecenter={() => {
@@ -8435,7 +8799,10 @@ function App() {
                 >
                   <AskStart
                     theme={theme}
-                    onHistory={() => setScreen("history")}
+                    onHistory={() => {
+                      markScenarioStepComplete("share-plan", 1)
+                      setScreen("history")
+                    }}
                     onSend={() => setScreen("chat")}
                     onClose={() => setScreen("map")}
                   />
@@ -8451,7 +8818,10 @@ function App() {
                 >
                   <HistoryScreen
                     theme={theme}
-                    onOpen={() => setScreen("chat")}
+                    onOpen={() => {
+                      markScenarioStepComplete("share-plan", 2)
+                      setScreen("chat")
+                    }}
                     onClose={() => setScreen("ask")}
                   />
                 </div>
@@ -8466,10 +8836,16 @@ function App() {
                 >
                   <ChatScreen
                     theme={theme}
-                    onHistory={() => setScreen("history")}
+                    onHistory={() => {
+                      markScenarioStepComplete("share-plan", 1)
+                      setScreen("history")
+                    }}
                     onBack={() => setScreen("ask")}
                     onClose={() => setScreen("map")}
-                    onSave={() => setScreen("saved")}
+                    onSave={() => {
+                      markScenarioStepComplete("share-plan", 3)
+                      setScreen("saved")
+                    }}
                   />
                 </div>
               )}
@@ -8477,12 +8853,13 @@ function App() {
                 <MapScreen
                   saved
                   theme={theme}
-                  onToggleTheme={() =>
-                    setTheme(theme === "dark" ? "light" : "dark")
-                  }
+                  onToggleTheme={handleToggleTheme}
                   onAsk={() => setScreen("ask")}
                   onYou={() => setScreen("you")}
-                  onDirections={() => setScreen("plan")}
+                  onDirections={() => {
+                    markScenarioStepComplete("share-plan", 4)
+                    setScreen("plan")
+                  }}
                   onRecenter={() => {
                     if (iframeRef.current && iframeRef.current.contentWindow) {
                       iframeRef.current.contentWindow.postMessage(
@@ -8502,7 +8879,10 @@ function App() {
                   }}
                 >
                   <YouScreen
-                    onPlan={() => setScreen("plan")}
+                    onPlan={() => {
+                      markScenarioStepComplete("share-plan", 4)
+                      setScreen("plan")
+                    }}
                     onExplore={() => setScreen("map")}
                   />
                 </div>
@@ -8518,9 +8898,7 @@ function App() {
                   <PlanScreen
                     stops={planStops}
                     theme={theme}
-                    onToggleTheme={() =>
-                      setTheme(theme === "dark" ? "light" : "dark")
-                    }
+                    onToggleTheme={handleToggleTheme}
                     onCurrent={() => {
                       if (
                         iframeRef.current &&
@@ -8536,6 +8914,12 @@ function App() {
                     onBack={() => setScreen("you")}
                     onPlace={(stop) => {
                       setSelectedStop(stop)
+                      if (stop.title.toLowerCase().includes("kobashi")) {
+                        markScenarioStepComplete("bounce-light-mode", 0)
+                      }
+                      if (stop.title.toLowerCase().includes("kahve")) {
+                        markScenarioStepComplete("revisit-kahve", 1)
+                      }
                       setScreen("place")
                     }}
                     selectedLegIndex={selectedLegIndex}
@@ -8557,15 +8941,18 @@ function App() {
                     onRevisit={applyRevisit}
                     onReplaceStop={applyRevisitReplace}
                     onBounce={(stop) => {
+                      markScenarioStepComplete("bounce-light-mode", 1)
                       setSelectedStop(stop)
                       setScreen("bounce")
                     }}
                     onSearch={(stop) => {
+                      markScenarioStepComplete("add-boat-quay", 1)
                       setRouteSearchTargetStop(stop)
                       setScreen("search-along-route")
                     }}
                     onUpdateTime={handleUpdateStopTime}
                     onReorderStops={handleReorderStops}
+                    scale={deviceMode === "figma" ? 1 : scale}
                   />
                 </div>
               )}
@@ -8601,9 +8988,7 @@ function App() {
                   <BounceScreen
                     sourceStop={selectedStop}
                     theme={theme}
-                    onToggleTheme={() =>
-                      setTheme(theme === "dark" ? "light" : "dark")
-                    }
+                    onToggleTheme={handleToggleTheme}
                     onRecenter={() => {
                       if (
                         iframeRef.current &&
@@ -8621,7 +9006,12 @@ function App() {
                       setScreen("updated")
                     }}
                     selectedOption={bounceOptionIndex}
-                    onSelectOption={handleSelectBounceOption}
+                    onSelectOption={(idx) => {
+                      if (idx === 0) {
+                        markScenarioStepComplete("bounce-light-mode", 3)
+                      }
+                      handleSelectBounceOption(idx)
+                    }}
                     onToggleDrawer={(down) => {
                       if (
                         iframeRef.current &&
@@ -8647,9 +9037,7 @@ function App() {
                   <PlanScreen
                     stops={planStops}
                     theme={theme}
-                    onToggleTheme={() =>
-                      setTheme(theme === "dark" ? "light" : "dark")
-                    }
+                    onToggleTheme={handleToggleTheme}
                     onCurrent={() => {
                       if (
                         iframeRef.current &&
@@ -8665,6 +9053,12 @@ function App() {
                     onBack={() => setScreen("you")}
                     onPlace={(stop) => {
                       setSelectedStop(stop)
+                      if (stop.title.toLowerCase().includes("kobashi")) {
+                        markScenarioStepComplete("bounce-light-mode", 0)
+                      }
+                      if (stop.title.toLowerCase().includes("kahve")) {
+                        markScenarioStepComplete("revisit-kahve", 1)
+                      }
                       setScreen("place")
                     }}
                     selectedLegIndex={selectedLegIndex}
@@ -8686,15 +9080,18 @@ function App() {
                     onRevisit={applyRevisit}
                     onReplaceStop={applyRevisitReplace}
                     onBounce={(stop) => {
+                      markScenarioStepComplete("bounce-light-mode", 1)
                       setSelectedStop(stop)
                       setScreen("bounce")
                     }}
                     onSearch={(stop) => {
+                      markScenarioStepComplete("add-boat-quay", 1)
                       setRouteSearchTargetStop(stop)
                       setScreen("search-along-route")
                     }}
                     onUpdateTime={handleUpdateStopTime}
                     onReorderStops={handleReorderStops}
+                    scale={deviceMode === "figma" ? 1 : scale}
                   />
                 </div>
               )}
@@ -8721,141 +9118,11 @@ function App() {
           </div>
         </div>
       </div>
+    </div>
 
-      {/* Localhost Preview Mode & Prototype Switcher */}
-      {!isRunningInIframe && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: 14,
-            right: 14,
-            zIndex: 9999,
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            background: "rgba(18, 22, 26, 0.94)",
-            backdropFilter: "blur(14px)",
-            WebkitBackdropFilter: "blur(14px)",
-            border: "1px solid rgba(255, 255, 255, 0.16)",
-            borderRadius: 999,
-            padding: "5px 6px 5px 12px",
-            boxShadow: "0 6px 20px rgba(0, 0, 0, 0.45)",
-            color: "#e8eaed",
-            fontSize: 12,
-            fontFamily: "var(--font)",
-            userSelect: "none",
-          }}
-        >
-          {/* Prototype Selector */}
-          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            <span style={{ opacity: 0.75, fontWeight: 500, fontSize: 11 }}>
-              Prototype:
-            </span>
-            <div
-              style={{
-                display: "inline-flex",
-                background: "rgba(0, 0, 0, 0.35)",
-                borderRadius: 999,
-                padding: 2,
-                border: "1px solid rgba(255, 255, 255, 0.08)",
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => handleSelectPrototype("light")}
-                style={{
-                  background:
-                    prototypeMode === "light" ? "#ffffff" : "transparent",
-                  color: prototypeMode === "light" ? "#1a202c" : "#9aa0a6",
-                  border: "none",
-                  borderRadius: 999,
-                  padding: "3px 8px",
-                  fontSize: 11,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 4,
-                  transition: "all 0.15s ease",
-                }}
-                title="Prototype 1: Default Light Mode (Dark mode optional)"
-              >
-                <span>☀️</span> Light
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSelectPrototype("dark")}
-                style={{
-                  background:
-                    prototypeMode === "dark" ? "#3c4043" : "transparent",
-                  color: prototypeMode === "dark" ? "#ffffff" : "#9aa0a6",
-                  border: "none",
-                  borderRadius: 999,
-                  padding: "3px 8px",
-                  fontSize: 11,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 4,
-                  transition: "all 0.15s ease",
-                }}
-                title="Prototype 2: Default Dark Mode (Light mode optional)"
-              >
-                <span>🌙</span> Dark
-              </button>
-            </div>
-          </div>
-
-          <div
-            style={{
-              width: 1,
-              height: 18,
-              background: "rgba(255, 255, 255, 0.15)",
-            }}
-          />
-
-          <span style={{ opacity: 0.75, fontWeight: 500, fontSize: 11 }}>
-            View:
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              const nextMode = deviceMode === "local" ? "figma" : "local"
-              setDeviceMode(nextMode)
-              try {
-                window.sessionStorage?.setItem("bounce_device_mode", nextMode)
-              } catch { }
-            }}
-            style={{
-              background: deviceMode === "figma" ? "#00796b" : "#2b3036",
-              color: "#ffffff",
-              border: "1px solid rgba(255, 255, 255, 0.18)",
-              borderRadius: 999,
-              padding: "4px 10px",
-              fontSize: 11,
-              fontWeight: 600,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 5,
-              transition: "all 0.15s ease",
-            }}
-            title="Toggle between Localhost iPhone Chassis + Island and Figma Make Responsive Fit"
-          >
-            {deviceMode === "local" ? (
-              <>
-                <span>📱</span> Local (iPhone + Island)
-              </>
-            ) : (
-              <>
-                <span>📐</span> Figma Make (Device Fit, No Island)
-              </>
-            )}
-          </button>
-        </div>
-      )}
-    </main>
+    {/* Interactive Demo Walkthrough Scenario Guide */}
+    <ScenarioGuide theme={theme} scale={scale} />
+  </main>
   )
 }
 
