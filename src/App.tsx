@@ -6034,10 +6034,7 @@ function RevisitSheet({
   onClose: () => void
 }) {
   useEffect(() => {
-    markScenarioStepComplete("revisit-kahve", 0)
-    if (stop.title.toLowerCase().includes("kahve")) {
-      markScenarioStepComplete("revisit-kahve", 1)
-    }
+    markScenarioStepComplete("revisit-kahve", 1)
   }, [stop])
 
   // Option 1: Recommendation of where to add after
@@ -6391,10 +6388,7 @@ function PlaceScreen({
             onPress={
               stop.past
                 ? () => {
-                    markScenarioStepComplete("revisit-kahve", 0)
-                    if (stop.title.toLowerCase().includes("kahve")) {
-                      markScenarioStepComplete("revisit-kahve", 1)
-                    }
+                    markScenarioStepComplete("revisit-kahve", 1)
                     setShowRevisit(true)
                   }
                 : () => {
@@ -8929,7 +8923,7 @@ function App() {
                         markScenarioStepComplete("bounce-light-mode", 0)
                       }
                       if (stop.title.toLowerCase().includes("kahve")) {
-                        markScenarioStepComplete("revisit-kahve", 1)
+                        markScenarioStepComplete("revisit-kahve", 0)
                       }
                       setScreen("place")
                     }}
@@ -9068,7 +9062,7 @@ function App() {
                         markScenarioStepComplete("bounce-light-mode", 0)
                       }
                       if (stop.title.toLowerCase().includes("kahve")) {
-                        markScenarioStepComplete("revisit-kahve", 1)
+                        markScenarioStepComplete("revisit-kahve", 0)
                       }
                       setScreen("place")
                     }}

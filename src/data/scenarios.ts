@@ -97,8 +97,8 @@ export const SCENARIOS: PrototypeScenario[] = [
     prompt:
       "As they walk, John’s dad asks if they can grab coffee from Kahve, the spot he loved that morning.",
     steps: [
+      "Scroll and Tap Kahve",
       "Tap Revisit",
-      "Select Kahve",
       {
         text: "Insert it right after Maxwell Food Centre",
         remark: 'Note: complete task "Fill a 2-Hour Gap Under the Sun" first.',
