@@ -7591,6 +7591,17 @@ function App() {
   const initialMapTheme = useRef<Theme>(initialPrototype).current
   const [screen, setScreen] = useState<Screen>(initialScreen)
 
+  useEffect(() => {
+    document.title = "Google Maps Plans Prototype"
+    let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']")
+    if (!link) {
+      link = document.createElement("link")
+      link.rel = "icon"
+      document.head.appendChild(link)
+    }
+    link.href = "/favicon.svg"
+  }, [])
+
   const handleToggleTheme = () => {
     const nextTheme: Theme = theme === "dark" ? "light" : "dark"
     if (nextTheme === "light") {
