@@ -45,10 +45,10 @@ export const SCENARIOS: PrototypeScenario[] = [
       "Tap the '+' under the Kobashi location card",
       "Tap Bounce",
       {
-        text: "Toggle Light Mode for bright sunlight visibility",
+        text: "Tap the Sun icon to toggle Light Mode for bright sunlight visibility",
         remark: "Optional: slide down the drawer to see the map and options expand",
       },
-      "Spot Maxwell Food Centre (4 mins away) and tap to add it",
+      "Tap the Maxwell Food Centre (4 mins away) option and tap the button to add it after Kobashi",
     ],
     highlight:
       "One-tap light mode fixes outdoor glare, and nearby detours slot in without everyone Googling separately.",

@@ -22,9 +22,9 @@ export function markScenarioStepComplete(scenarioId: string, stepIndex: number) 
 
 export function ScenarioGuide({ theme = "dark", scale = 1 }: ScenarioGuideProps) {
   // Session persistence keys (versioned to avoid stale step state across scenario definition updates)
-  const STORAGE_KEY_CHECKED = "bounce_scenario_checked_steps_v5"
-  const STORAGE_KEY_COMPLETED = "bounce_scenario_completed_map_v5"
-  const STORAGE_KEY_ACTIVE = "bounce_scenario_active_id_v5"
+  const STORAGE_KEY_CHECKED = "bounce_scenario_checked_steps_v7"
+  const STORAGE_KEY_COMPLETED = "bounce_scenario_completed_map_v7"
+  const STORAGE_KEY_ACTIVE = "bounce_scenario_active_id_v7"
   const STORAGE_KEY_MINIMISED = "bounce_scenario_is_minimised"
 
   // Active scenario
